@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/advisor.dart';
 import '../../services/sales_service.dart';
 import '../../services/traffic_service.dart';
+import '../../theme.dart';
 
 class ReportsScreen extends StatefulWidget {
   final Advisor advisor;
@@ -209,34 +210,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 ],
 
                 // ── MONTHLY CHART ──
-                _SectionLabel('NET SALES PER BULAN (${widget.year})'),
-                const SizedBox(height: 8),
-                _Card(child: SizedBox(
-                  height: 160,
-                  child: BarChart(BarChartData(
-                    gridData: FlGridData(show: true, drawVerticalLine: false,
-                      getDrawingHorizontalLine: (_) => const FlLine(color: Color(0xFFF1F5F9), strokeWidth: 1)),
-                    borderData: FlBorderData(show: false),
-                    titlesData: FlTitlesData(
-                      leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      bottomTitles: AxisTitles(sideTitles: SideTitles(
-                        showTitles: true, reservedSize: 22,
-                        getTitlesWidget: (v, _) => Text(_mNames[v.toInt()],
-                          style: const TextStyle(fontSize: 9, color: Color(0xFF94A3B8))),
-                      )),
-                    ),
-                    barGroups: List.generate(12, (i) => BarChartGroupData(
-                      x: i,
-                      barRods: [BarChartRodData(
-                        toY: _monthly[i] / 1e6, width: 16,
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
-                        color: i == widget.month - 1 ? const Color(0xFF2563EB) : const Color(0xFFBFDBFE),
-                      )],
-                    )),
-                  )),
-                )),
+                _MonthlyChart(monthly: _monthly, currentMonth: widget.month, year: widget.year),
                 const SizedBox(height: 16),
 
                 // ── ANNUAL SUMMARY ──
@@ -298,4 +272,111 @@ class _SummaryRow extends StatelessWidget {
     ),
     if (!isLast) const Divider(height: 1, color: Color(0xFFF1F5F9)),
   ]);
+}
+
+class _MonthlyChart extends StatefulWidget {
+  final List<double> monthly;
+  final int currentMonth;
+  final int year;
+  const _MonthlyChart({required this.monthly, required this.currentMonth, required this.year});
+
+  @override
+  State<_MonthlyChart> createState() => _MonthlyChartState();
+}
+
+class _MonthlyChartState extends State<_MonthlyChart> {
+  int? _touchedIndex;
+  static const _mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  String _fmtAxis(double m) {
+    if (m >= 1000) return '${(m / 1000).toStringAsFixed(0)}B';
+    if (m >= 1)    return '${m.toStringAsFixed(0)}M';
+    return '';
+  }
+
+  String _fmtTip(double v) {
+    if (v >= 1e9) return '${(v / 1e9).toStringAsFixed(2)}B';
+    if (v >= 1e6) return '${(v / 1e6).toStringAsFixed(1)}M';
+    return v.toStringAsFixed(0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final maxVal = widget.monthly.fold(0.0, (a, b) => a > b ? a : b);
+    final maxY    = maxVal > 0 ? ((maxVal / 1e6) * 1.3).ceilToDouble() : 100.0;
+    final interval = (maxY / 4).ceilToDouble();
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 16, 16, 10),
+      decoration: BoxDecoration(
+        color: Colors.white, borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)]),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(padding: const EdgeInsets.only(left: 4),
+          child: Text('NET SALES PER BULAN (${widget.year})',
+            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800,
+              color: Color(0xFF94A3B8), letterSpacing: 1))),
+        const SizedBox(height: 14),
+        SizedBox(height: 190, child: BarChart(BarChartData(
+          maxY: maxY,
+          gridData: FlGridData(show: true, drawVerticalLine: false,
+            horizontalInterval: interval,
+            getDrawingHorizontalLine: (_) => const FlLine(color: Color(0xFFF1F5F9), strokeWidth: 1)),
+          borderData: FlBorderData(show: false),
+          barTouchData: BarTouchData(
+            touchTooltipData: BarTouchTooltipData(
+              getTooltipColor: (_) => const Color(0xFF1E293B),
+              tooltipRoundedRadius: 8,
+              tooltipPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              getTooltipItem: (group, _, rod, __) => BarTooltipItem(
+                '${_mNames[group.x]}\nIDR ${_fmtTip(widget.monthly[group.x])}',
+                const TextStyle(color: Colors.white, fontSize: 11,
+                  fontWeight: FontWeight.w600, height: 1.5)),
+            ),
+            touchCallback: (event, response) => setState(() {
+              _touchedIndex = response?.spot == null ? null
+                  : response!.spot!.touchedBarGroupIndex;
+            }),
+          ),
+          titlesData: FlTitlesData(
+            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            leftTitles: AxisTitles(sideTitles: SideTitles(
+              showTitles: true, reservedSize: 40, interval: interval,
+              getTitlesWidget: (v, _) => v == 0 ? const SizedBox() : Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Text(_fmtAxis(v),
+                  style: const TextStyle(fontSize: 9, color: Color(0xFF94A3B8)),
+                  textAlign: TextAlign.right)),
+            )),
+            bottomTitles: AxisTitles(sideTitles: SideTitles(
+              showTitles: true, reservedSize: 22,
+              getTitlesWidget: (v, _) {
+                final i = v.toInt();
+                final active = i == widget.currentMonth - 1;
+                return Padding(padding: const EdgeInsets.only(top: 4),
+                  child: Text(_mNames[i], style: TextStyle(fontSize: 9,
+                    fontWeight: active ? FontWeight.w800 : FontWeight.w400,
+                    color: active ? AppTheme.primary : const Color(0xFF94A3B8))));
+              },
+            )),
+          ),
+          barGroups: List.generate(12, (i) {
+            final active  = i == widget.currentMonth - 1;
+            final touched = i == _touchedIndex;
+            return BarChartGroupData(x: i, barRods: [BarChartRodData(
+              toY: widget.monthly[i] / 1e6,
+              width: touched ? 18 : 14,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+              color: active ? AppTheme.primary
+                  : touched ? AppTheme.secondary : const Color(0xFFE0E7FF),
+              backDrawRodData: BackgroundBarChartRodData(
+                show: true, toY: maxY, color: const Color(0xFFF8FAFC)),
+            )]);
+          }),
+        ))),
+      ]),
+    );
+  }
 }
