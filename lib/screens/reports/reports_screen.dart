@@ -1,50 +1,69 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../../models/advisor.dart';
 import '../../services/sales_service.dart';
+import '../../services/traffic_service.dart';
 
 class ReportsScreen extends StatefulWidget {
   final Advisor advisor;
-  const ReportsScreen({super.key, required this.advisor});
+  final int month;
+  final int year;
+  const ReportsScreen({super.key, required this.advisor, required this.month, required this.year});
 
   @override
   State<ReportsScreen> createState() => _ReportsScreenState();
 }
 
 class _ReportsScreenState extends State<ReportsScreen> {
-  final now = DateTime.now();
   bool _loading = true;
   Map<String, Map<String, dynamic>> _categories = {};
   List<Map<String, dynamic>> _leaderboard = [];
+  Map<String, int> _trafficBreakdown = {};
+  List<double> _monthly = List.filled(12, 0);
 
-  String _fmtM(double v) {
-    if (v >= 1e9) return '${(v / 1e9).toStringAsFixed(1)}B';
-    if (v >= 1e6) return '${(v / 1e6).toStringAsFixed(1)}M';
-    return v.toStringAsFixed(0);
-  }
+  static const _mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  static const _mNamesFull = ['January','February','March','April','May','June',
+    'July','August','September','October','November','December'];
 
   @override
-  void initState() {
-    super.initState();
-    _load();
+  void initState() { super.initState(); _load(); }
+
+  @override
+  void didUpdateWidget(covariant ReportsScreen old) {
+    super.didUpdateWidget(old);
+    if (old.month != widget.month || old.year != widget.year) _load();
   }
 
   Future<void> _load() async {
     setState(() => _loading = true);
     final adv = widget.advisor;
     final results = await Future.wait([
-      SalesService.getCategoryBreakdown(
-        advisorName: adv.name, isManager: adv.isManager,
-        store: adv.store, month: now.month, year: now.year),
-      if (adv.isManager)
-        SalesService.getLeaderboard(store: adv.store, month: now.month, year: now.year),
+      SalesService.getCategoryBreakdown(advisorName: adv.name, isManager: adv.isManager,
+        store: adv.store, month: widget.month, year: widget.year),
+      SalesService.getMonthlyChart(advisorName: adv.name, isManager: adv.isManager,
+        store: adv.store, year: widget.year),
+      TrafficService.getTrafficBreakdown(advisorName: adv.name, isManager: adv.isManager,
+        store: adv.store, month: widget.month, year: widget.year),
     ]);
+
+    List<Map<String, dynamic>> lb = [];
+    if (adv.isManager) {
+      lb = await SalesService.getLeaderboard(store: adv.store, month: widget.month, year: widget.year);
+    }
+
     setState(() {
-      _categories = results[0] as Map<String, Map<String, dynamic>>;
-      if (adv.isManager && results.length > 1) {
-        _leaderboard = results[1] as List<Map<String, dynamic>>;
-      }
-      _loading = false;
+      _categories      = results[0] as Map<String, Map<String, dynamic>>;
+      _monthly         = results[1] as List<double>;
+      _trafficBreakdown = results[2] as Map<String, int>;
+      _leaderboard     = lb;
+      _loading         = false;
     });
+  }
+
+  String _fmt(double v) {
+    if (v >= 1e9) return '${(v / 1e9).toStringAsFixed(1)}B';
+    if (v >= 1e6) return '${(v / 1e6).toStringAsFixed(1)}M';
+    return v.toStringAsFixed(0);
   }
 
   @override
@@ -52,126 +71,231 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final adv = widget.advisor;
     final sortedCats = _categories.entries.toList()
       ..sort((a, b) => (b.value['net'] as double).compareTo(a.value['net'] as double));
-    final totalNet = sortedCats.fold(0.0, (s, e) => s + (e.value['net'] as double));
+    final totalNet = sortedCats.fold<double>(0, (s, e) => s + (e.value['net'] as double));
+    final totalQty = sortedCats.fold<int>(0, (s, e) => s + (e.value['qty'] as int));
+    final ytd = _monthly.fold<double>(0, (s, v) => s + v);
+    final bestMonthIdx = _monthly.indexWhere((v) => v == _monthly.reduce((a, b) => a > b ? a : b));
+    final avgMonthly = _monthly.where((v) => v > 0).isEmpty ? 0.0
+        : _monthly.where((v) => v > 0).fold<double>(0, (s, v) => s + v) / _monthly.where((v) => v > 0).length;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF1E40AF)))
-          : RefreshIndicator(
-              onRefresh: _load,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  // Category Breakdown
-                  _SectionTitle('Category Breakdown'),
+    return _loading
+        ? const Center(child: CircularProgressIndicator(color: Color(0xFF2563EB)))
+        : RefreshIndicator(
+            onRefresh: _load,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+              children: [
+                // ── LEADERBOARD (manager only) ──
+                if (adv.isManager && _leaderboard.isNotEmpty) ...[
+                  _SectionLabel('📊 STAFF LEADERBOARD'),
                   const SizedBox(height: 8),
-                  Container(
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6)]),
-                    child: Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          child: Row(children: const [
-                            Expanded(child: Text('KATEGORI', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
-                              color: Color(0xFF94A3B8), letterSpacing: 1))),
-                            SizedBox(width: 50, child: Text('QTY', textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Color(0xFF94A3B8), letterSpacing: 1))),
-                            SizedBox(width: 80, child: Text('NET SALES', textAlign: TextAlign.right,
-                              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Color(0xFF94A3B8), letterSpacing: 1))),
-                          ]),
-                        ),
-                        const Divider(height: 1, color: Color(0xFFE2E8F0)),
-                        ...sortedCats.map((e) {
-                          final pct = totalNet > 0 ? (e.value['net'] as double) / totalNet : 0.0;
-                          return Column(children: [
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                              child: Column(children: [
-                                Row(children: [
-                                  Expanded(child: Text(e.key, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
-                                  SizedBox(width: 50, child: Text('${e.value['qty']}', textAlign: TextAlign.center,
-                                    style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)))),
-                                  SizedBox(width: 80, child: Text(_fmtM(e.value['net'] as double),
-                                    textAlign: TextAlign.right,
-                                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold))),
-                                ]),
-                                const SizedBox(height: 4),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: LinearProgressIndicator(value: pct, minHeight: 4,
-                                    backgroundColor: const Color(0xFFE2E8F0),
-                                    valueColor: const AlwaysStoppedAnimation(Color(0xFF1E40AF))),
-                                ),
-                              ]),
-                            ),
-                            const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                          ]);
-                        }),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          child: Row(children: [
-                            const Expanded(child: Text('TOTAL', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900))),
-                            SizedBox(width: 50, child: Text(
-                              '${sortedCats.fold(0, (s, e) => s + (e.value['qty'] as int))}',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900))),
-                            SizedBox(width: 80, child: Text(_fmtM(totalNet),
-                              textAlign: TextAlign.right,
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Color(0xFF1E40AF)))),
-                          ]),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Leaderboard (manager only)
-                  if (adv.isManager && _leaderboard.isNotEmpty) ...[
-                    const SizedBox(height: 20),
-                    _SectionTitle('Staff Leaderboard'),
-                    const SizedBox(height: 8),
-                    ..._leaderboard.take(10).toList().asMap().entries.map((entry) {
-                      final rank = entry.key + 1;
-                      final item = entry.value;
+                  _Card(child: Column(
+                    children: _leaderboard.take(10).toList().asMap().entries.map((e) {
+                      final rank = e.key + 1;
+                      final item = e.value;
                       final medal = rank == 1 ? '🥇' : rank == 2 ? '🥈' : rank == 3 ? '🥉' : '$rank';
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(14),
-                          border: rank <= 3 ? Border.all(color: const Color(0xFFD4AF37).withOpacity(0.4)) : null,
-                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6)],
-                        ),
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
                         child: Row(children: [
-                          SizedBox(width: 32, child: Text(medal,
+                          SizedBox(width: 30, child: Text(medal,
                             style: const TextStyle(fontSize: 16), textAlign: TextAlign.center)),
                           const SizedBox(width: 10),
                           Expanded(child: Text(item['name'] as String,
-                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14))),
-                          Text('IDR ${_fmtM(item['net'] as double)}',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14,
-                              color: Color(0xFF1E40AF))),
+                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
+                          Text('IDR ${_fmt(item['net'] as double)}',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13,
+                              color: Color(0xFF2563EB))),
                         ]),
                       );
-                    }),
-                  ],
+                    }).toList(),
+                  )),
+                  const SizedBox(height: 16),
                 ],
-              ),
+
+                // ── CATEGORY BREAKDOWN ──
+                _SectionLabel('PENJUALAN PER MAIN CATEGORY (BULAN INI)'),
+                const SizedBox(height: 8),
+                _Card(child: Column(children: [
+                  // Header
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
+                    child: Row(children: const [
+                      Expanded(child: Text('KATEGORI', style: TextStyle(fontSize: 9,
+                        fontWeight: FontWeight.w900, color: Color(0xFF94A3B8), letterSpacing: 1))),
+                      SizedBox(width: 40, child: Text('QTY', textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
+                          color: Color(0xFF94A3B8), letterSpacing: 1))),
+                      SizedBox(width: 80, child: Text('NET SALES', textAlign: TextAlign.right,
+                        style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
+                          color: Color(0xFF94A3B8), letterSpacing: 1))),
+                    ]),
+                  ),
+                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                  ...sortedCats.map((e) {
+                    final pct = totalNet > 0 ? (e.value['net'] as double) / totalNet : 0.0;
+                    return Column(children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                        child: Column(children: [
+                          Row(children: [
+                            Expanded(child: Text(e.key,
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+                            SizedBox(width: 40, child: Text('${e.value['qty']}',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)))),
+                            SizedBox(width: 80, child: Text(_fmt(e.value['net'] as double),
+                              textAlign: TextAlign.right,
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold))),
+                          ]),
+                          const SizedBox(height: 5),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: pct, minHeight: 4,
+                              backgroundColor: const Color(0xFFE2E8F0),
+                              valueColor: const AlwaysStoppedAnimation(Color(0xFF2563EB))),
+                          ),
+                        ]),
+                      ),
+                      const Divider(height: 1, color: Color(0xFFF8FAFC)),
+                    ]);
+                  }),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                    child: Row(children: [
+                      const Expanded(child: Text('TOTAL', style: TextStyle(
+                        fontSize: 12, fontWeight: FontWeight.w900))),
+                      SizedBox(width: 40, child: Text('$totalQty', textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900))),
+                      SizedBox(width: 80, child: Text(_fmt(totalNet), textAlign: TextAlign.right,
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900,
+                          color: Color(0xFF2563EB)))),
+                    ]),
+                  ),
+                ])),
+                const SizedBox(height: 16),
+
+                // ── TRAFFIC BREAKDOWN ──
+                if (_trafficBreakdown.isNotEmpty) ...[
+                  _SectionLabel('LAPORAN TRAFFIC CRM (BULAN INI)'),
+                  const SizedBox(height: 8),
+                  _Card(child: Column(
+                    children: _trafficBreakdown.entries.map((e) {
+                      final total = _trafficBreakdown.values.fold<int>(0, (s, v) => s + v);
+                      final pct = total > 0 ? e.value / total : 0.0;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                        child: Row(children: [
+                          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                              Text(e.key, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                              Text('${e.value}', style: const TextStyle(fontSize: 13,
+                                fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                            ]),
+                            const SizedBox(height: 4),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: pct, minHeight: 4,
+                                backgroundColor: const Color(0xFFE2E8F0),
+                                valueColor: const AlwaysStoppedAnimation(Color(0xFF7C3AED))),
+                            ),
+                          ])),
+                        ]),
+                      );
+                    }).toList(),
+                  )),
+                  const SizedBox(height: 16),
+                ],
+
+                // ── MONTHLY CHART ──
+                _SectionLabel('NET SALES PER BULAN (${widget.year})'),
+                const SizedBox(height: 8),
+                _Card(child: SizedBox(
+                  height: 160,
+                  child: BarChart(BarChartData(
+                    gridData: FlGridData(show: true, drawVerticalLine: false,
+                      getDrawingHorizontalLine: (_) => const FlLine(color: Color(0xFFF1F5F9), strokeWidth: 1)),
+                    borderData: FlBorderData(show: false),
+                    titlesData: FlTitlesData(
+                      leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      bottomTitles: AxisTitles(sideTitles: SideTitles(
+                        showTitles: true, reservedSize: 22,
+                        getTitlesWidget: (v, _) => Text(_mNames[v.toInt()],
+                          style: const TextStyle(fontSize: 9, color: Color(0xFF94A3B8))),
+                      )),
+                    ),
+                    barGroups: List.generate(12, (i) => BarChartGroupData(
+                      x: i,
+                      barRods: [BarChartRodData(
+                        toY: _monthly[i] / 1e6, width: 16,
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                        color: i == widget.month - 1 ? const Color(0xFF2563EB) : const Color(0xFFBFDBFE),
+                      )],
+                    )),
+                  )),
+                )),
+                const SizedBox(height: 16),
+
+                // ── ANNUAL SUMMARY ──
+                _SectionLabel('RINGKASAN TAHUNAN'),
+                const SizedBox(height: 8),
+                _Card(child: Column(children: [
+                  _SummaryRow('YTD Total', 'IDR ${_fmt(ytd)}'),
+                  _SummaryRow('Bulan Terbaik',
+                    bestMonthIdx >= 0 ? '${_mNamesFull[bestMonthIdx]} (IDR ${_fmt(_monthly[bestMonthIdx])})' : '—'),
+                  _SummaryRow('Rata-rata Bulanan', 'IDR ${_fmt(avgMonthly)}', isLast: true),
+                ])),
+              ],
             ),
-    );
+          );
   }
 }
 
-class _SectionTitle extends StatelessWidget {
+class _SectionLabel extends StatelessWidget {
   final String text;
-  const _SectionTitle(this.text);
+  const _SectionLabel(this.text);
 
   @override
-  Widget build(BuildContext context) {
-    return Text(text, style: const TextStyle(
-      fontSize: 13, fontWeight: FontWeight.w900,
-      color: Color(0xFF374151), letterSpacing: 0.5));
-  }
+  Widget build(BuildContext context) => Text(text, style: const TextStyle(
+    fontSize: 10, fontWeight: FontWeight.w900,
+    color: Color(0xFF94A3B8), letterSpacing: 1));
+}
+
+class _Card extends StatelessWidget {
+  final Widget child;
+  const _Card({required this.child});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: const Color(0xFFE2E8F0)),
+      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)],
+    ),
+    child: child,
+  );
+}
+
+class _SummaryRow extends StatelessWidget {
+  final String label, value;
+  final bool isLast;
+  const _SummaryRow(this.label, this.value, {this.isLast = false});
+
+  @override
+  Widget build(BuildContext context) => Column(children: [
+    Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        Text(label, style: const TextStyle(fontSize: 13, color: Color(0xFF64748B))),
+        Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold,
+          color: Color(0xFF1E293B))),
+      ]),
+    ),
+    if (!isLast) const Divider(height: 1, color: Color(0xFFF1F5F9)),
+  ]);
 }

@@ -27,14 +27,15 @@ class BvlgariAdvisorApp extends StatelessWidget {
       title: 'Bvlgari Advisor',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1E40AF)),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2563EB)),
         useMaterial3: true,
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.white,
-          foregroundColor: Color(0xFF0F172A),
-          elevation: 0,
-          centerTitle: false,
+          foregroundColor: Color(0xFF1E293B),
+          elevation: 0, centerTitle: false,
+          surfaceTintColor: Colors.white,
         ),
+        scaffoldBackgroundColor: const Color(0xFFF8FAFC),
       ),
       home: const AppRoot(),
     );
@@ -43,9 +44,7 @@ class BvlgariAdvisorApp extends StatelessWidget {
 
 class AppRoot extends StatefulWidget {
   const AppRoot({super.key});
-
-  @override
-  State<AppRoot> createState() => _AppRootState();
+  @override State<AppRoot> createState() => _AppRootState();
 }
 
 class _AppRootState extends State<AppRoot> {
@@ -53,10 +52,7 @@ class _AppRootState extends State<AppRoot> {
   bool _checking = true;
 
   @override
-  void initState() {
-    super.initState();
-    _checkSession();
-  }
+  void initState() { super.initState(); _checkSession(); }
 
   Future<void> _checkSession() async {
     final advisor = await AuthService.getStoredAdvisor();
@@ -67,8 +63,8 @@ class _AppRootState extends State<AppRoot> {
   Widget build(BuildContext context) {
     if (_checking) {
       return const Scaffold(
-        backgroundColor: Color(0xFF0A1628),
-        body: Center(child: CircularProgressIndicator(color: Color(0xFFD4AF37))),
+        backgroundColor: Color(0xFFF8FAFC),
+        body: Center(child: CircularProgressIndicator(color: Color(0xFF2563EB))),
       );
     }
     if (_advisor == null) {
@@ -82,42 +78,132 @@ class MainShell extends StatefulWidget {
   final Advisor advisor;
   final VoidCallback onLogout;
   const MainShell({super.key, required this.advisor, required this.onLogout});
-
-  @override
-  State<MainShell> createState() => _MainShellState();
+  @override State<MainShell> createState() => _MainShellState();
 }
 
 class _MainShellState extends State<MainShell> {
   int _tab = 0;
 
-  static const _labels  = ['Beranda', 'Prospek', 'Laporan', 'CRM', 'Saya'];
-  static const _icons   = [Icons.home_outlined, Icons.people_outline, Icons.bar_chart_outlined, Icons.person_search_outlined, Icons.settings_outlined];
-  static const _actives = [Icons.home_rounded,   Icons.people_rounded,  Icons.bar_chart_rounded,  Icons.person_search_rounded,  Icons.settings_rounded];
+  final now = DateTime.now();
+  late int _month = DateTime.now().month;
+  late int _year  = DateTime.now().year;
+
+  static const _months = ['January','February','March','April','May','June',
+    'July','August','September','October','November','December'];
+
+  static const _labels  = ['Beranda', 'Prospek', 'Laporan'];
+  static const _icons   = [Icons.home_outlined,   Icons.people_outline,    Icons.bar_chart_outlined];
+  static const _actives = [Icons.home_rounded,    Icons.people_rounded,    Icons.bar_chart_rounded];
+
+  void _navTo(int tab) => setState(() => _tab = tab);
 
   @override
   Widget build(BuildContext context) {
     final adv = widget.advisor;
-    final titles = [
-      adv.isManager ? 'Store Performance' : 'My Performance',
-      'Prospek Bulan Ini', 'Laporan', 'CRM Profiling', 'Pengaturan',
-    ];
+
     final screens = [
-      DashboardScreen(advisor: adv),
-      ProspectsScreen(advisor: adv),
-      ReportsScreen(advisor: adv),
-      CrmSearchScreen(advisor: adv),
-      SettingsScreen(advisor: adv, onLogout: widget.onLogout),
+      DashboardScreen(advisor: adv, month: _month, year: _year,
+        onNavProspect: () => _navTo(1), onNavLaporan: () => _navTo(2)),
+      ProspectsScreen(advisor: adv, month: _month, year: _year),
+      ReportsScreen(advisor: adv, month: _month, year: _year),
     ];
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      // ── HEADER ──────────────────────────────────────────────────────
       appBar: AppBar(
-        title: Row(children: [
-          const Icon(Icons.diamond_outlined, size: 18, color: Color(0xFFD4AF37)),
-          const SizedBox(width: 8),
-          Text(titles[_tab], style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 1, color: const Color(0xFFE2E8F0)),
+        ),
+        title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Advisor Portal', style: TextStyle(
+            fontSize: 10, color: Color(0xFF94A3B8), fontWeight: FontWeight.w600, letterSpacing: 1)),
+          Text(adv.name, style: const TextStyle(
+            fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF1E293B),
+            fontFamily: 'Georgia')),
         ]),
+        actions: [
+          // Settings
+          IconButton(
+            icon: const Icon(Icons.settings_outlined, size: 20, color: Color(0xFF94A3B8)),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(
+              builder: (_) => Scaffold(
+                appBar: AppBar(title: const Text('Pengaturan'), backgroundColor: Colors.white,
+                  surfaceTintColor: Colors.white),
+                body: SettingsScreen(advisor: adv, onLogout: widget.onLogout),
+              ))),
+          ),
+          // Logout
+          IconButton(
+            icon: const Icon(Icons.logout_outlined, size: 20, color: Color(0xFF94A3B8)),
+            onPressed: () async {
+              await AuthService.logout();
+              widget.onLogout();
+            },
+          ),
+        ],
       ),
-      body: IndexedStack(index: _tab, children: screens),
+
+      // ── MONTH/YEAR FILTER (sticky below header) ──────────────────────
+      body: Column(children: [
+        Container(
+          color: Colors.white,
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: Row(children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<int>(
+                    value: _month,
+                    isExpanded: true,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold,
+                      color: Color(0xFF475569)),
+                    icon: const Icon(Icons.keyboard_arrow_down, size: 16, color: Color(0xFF94A3B8)),
+                    items: List.generate(12, (i) => DropdownMenuItem(
+                      value: i + 1, child: Text(_months[i]))),
+                    onChanged: (v) { if (v != null) setState(() => _month = v); },
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<int>(
+                  value: _year,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold,
+                    color: Color(0xFF475569)),
+                  icon: const Icon(Icons.keyboard_arrow_down, size: 16, color: Color(0xFF94A3B8)),
+                  items: [2024, 2025, 2026].map((y) => DropdownMenuItem(
+                    value: y, child: Text('$y'))).toList(),
+                  onChanged: (v) { if (v != null) setState(() => _year = v); },
+                ),
+              ),
+            ),
+          ]),
+        ),
+        Container(height: 1, color: const Color(0xFFE2E8F0)),
+
+        // ── PAGES ──
+        Expanded(child: IndexedStack(index: _tab, children: screens)),
+      ]),
+
+      // ── BOTTOM NAV ──────────────────────────────────────────────────
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(border: Border(top: BorderSide(color: Color(0xFFE2E8F0)))),
         child: BottomNavigationBar(
@@ -125,12 +211,12 @@ class _MainShellState extends State<MainShell> {
           onTap: (i) => setState(() => _tab = i),
           type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.white,
-          selectedItemColor: const Color(0xFF1E40AF),
+          selectedItemColor: const Color(0xFF2563EB),
           unselectedItemColor: const Color(0xFF94A3B8),
           selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 10),
           unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 10),
           elevation: 0,
-          items: List.generate(5, (i) => BottomNavigationBarItem(
+          items: List.generate(3, (i) => BottomNavigationBarItem(
             icon: Icon(_icons[i], size: 22),
             activeIcon: Icon(_actives[i], size: 22),
             label: _labels[i],

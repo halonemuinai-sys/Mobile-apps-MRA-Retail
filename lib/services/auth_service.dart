@@ -13,9 +13,28 @@ class AuthService {
   }
 
   static Future<List<String>> getAdvisorNames() async {
+    final res = await _sb.from('advisors').select('name').order('name');
+    return (res as List).map((r) => r['name'] as String).toList();
+  }
+
+  // Returns unique stores from advisors table
+  static Future<List<String>> getStores() async {
+    final res = await _sb.from('advisors').select('home_location').order('home_location');
+    final stores = (res as List)
+        .map((r) => (r['home_location'] as String?) ?? '')
+        .where((s) => s.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
+    return stores;
+  }
+
+  // Returns advisor names filtered by store
+  static Future<List<String>> getAdvisorNamesByStore(String store) async {
     final res = await _sb
         .from('advisors')
         .select('name')
+        .eq('home_location', store)
         .order('name');
     return (res as List).map((r) => r['name'] as String).toList();
   }
