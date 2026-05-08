@@ -39,7 +39,8 @@ class TrafficService {
     if (isManager) {
       q = q.ilike('location', '%${store.split(' ').last}%');
     } else {
-      q = q.eq('customer_advisor', advisorName);
+      // GAS uses served_by (col F) to match advisor, not customer_advisor (col E)
+      q = q.eq('served_by', advisorName);
     }
 
     final res = await q.order('tanggal_berkunjung', ascending: false);
