@@ -10,6 +10,7 @@ import 'screens/crm/crm_search_screen.dart';
 import 'screens/settings/settings_screen.dart';
 import 'services/auth_service.dart';
 import 'supabase_config.dart';
+import 'theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,17 +27,7 @@ class BvlgariAdvisorApp extends StatelessWidget {
     return MaterialApp(
       title: 'Bvlgari Advisor',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2563EB)),
-        useMaterial3: true,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          foregroundColor: Color(0xFF1E293B),
-          elevation: 0, centerTitle: false,
-          surfaceTintColor: Colors.white,
-        ),
-        scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-      ),
+      theme: AppTheme.theme,
       home: const AppRoot(),
     );
   }
@@ -109,112 +100,83 @@ class _MainShellState extends State<MainShell> {
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      // ── HEADER ──────────────────────────────────────────────────────
+      backgroundColor: AppTheme.bg,
       appBar: AppBar(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.white,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: const Color(0xFFE2E8F0)),
-        ),
-        title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Advisor Portal', style: TextStyle(
-            fontSize: 10, color: Color(0xFF94A3B8), fontWeight: FontWeight.w600, letterSpacing: 1)),
-          Text(adv.name, style: const TextStyle(
-            fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF1E293B),
-            fontFamily: 'Georgia')),
+          child: Container(height: 1, color: AppTheme.border)),
+        title: Row(children: [
+          Container(
+            width: 36, height: 36,
+            decoration: BoxDecoration(
+              gradient: AppTheme.gradient,
+              borderRadius: BorderRadius.circular(10)),
+            child: const Icon(Icons.storefront_rounded, color: Colors.white, size: 18)),
+          const SizedBox(width: 10),
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('MPI Advisor', style: TextStyle(
+              fontSize: 14, fontWeight: FontWeight.w800, color: AppTheme.dark)),
+            Text(adv.name, style: const TextStyle(
+              fontSize: 11, color: AppTheme.textSub, fontWeight: FontWeight.w500)),
+          ]),
         ]),
         actions: [
-          // Settings
           IconButton(
-            icon: const Icon(Icons.settings_outlined, size: 20, color: Color(0xFF94A3B8)),
+            icon: const Icon(Icons.tune_rounded, size: 20, color: AppTheme.textSub),
+            tooltip: 'Pengaturan',
             onPressed: () => Navigator.push(context, MaterialPageRoute(
               builder: (_) => Scaffold(
-                appBar: AppBar(title: const Text('Pengaturan'), backgroundColor: Colors.white,
-                  surfaceTintColor: Colors.white),
-                body: SettingsScreen(advisor: adv, onLogout: widget.onLogout),
-              ))),
+                backgroundColor: AppTheme.bg,
+                appBar: AppBar(title: const Text('Pengaturan'),
+                  backgroundColor: Colors.white, surfaceTintColor: Colors.white),
+                body: SettingsScreen(advisor: adv, onLogout: widget.onLogout)))),
           ),
-          // Logout
           IconButton(
-            icon: const Icon(Icons.logout_outlined, size: 20, color: Color(0xFF94A3B8)),
-            onPressed: () async {
-              await AuthService.logout();
-              widget.onLogout();
-            },
-          ),
+            icon: const Icon(Icons.power_settings_new_rounded, size: 20, color: AppTheme.textSub),
+            tooltip: 'Keluar',
+            onPressed: () async { await AuthService.logout(); widget.onLogout(); }),
+          const SizedBox(width: 4),
         ],
       ),
 
-      // ── MONTH/YEAR FILTER (sticky below header) ──────────────────────
       body: Column(children: [
+        // Month/Year filter bar
         Container(
           color: Colors.white,
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
           child: Row(children: [
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<int>(
-                    value: _month,
-                    isExpanded: true,
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold,
-                      color: Color(0xFF475569)),
-                    icon: const Icon(Icons.keyboard_arrow_down, size: 16, color: Color(0xFF94A3B8)),
-                    items: List.generate(12, (i) => DropdownMenuItem(
-                      value: i + 1, child: Text(_months[i]))),
-                    onChanged: (v) { if (v != null) setState(() => _month = v); },
-                  ),
-                ),
-              ),
-            ),
+            const Icon(Icons.calendar_today_rounded, size: 14, color: AppTheme.textSub),
             const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<int>(
-                  value: _year,
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold,
-                    color: Color(0xFF475569)),
-                  icon: const Icon(Icons.keyboard_arrow_down, size: 16, color: Color(0xFF94A3B8)),
-                  items: [2024, 2025, 2026].map((y) => DropdownMenuItem(
-                    value: y, child: Text('$y'))).toList(),
-                  onChanged: (v) { if (v != null) setState(() => _year = v); },
-                ),
-              ),
-            ),
+            Expanded(child: _FilterDropdown<int>(
+              value: _month,
+              items: List.generate(12, (i) => DropdownMenuItem(value: i+1, child: Text(_months[i]))),
+              onChanged: (v) { if (v != null) setState(() => _month = v); })),
+            const SizedBox(width: 8),
+            SizedBox(width: 86, child: _FilterDropdown<int>(
+              value: _year,
+              items: [2024,2025,2026].map((y) => DropdownMenuItem(value: y, child: Text('$y'))).toList(),
+              onChanged: (v) { if (v != null) setState(() => _year = v); })),
           ]),
         ),
-        Container(height: 1, color: const Color(0xFFE2E8F0)),
-
-        // ── PAGES ──
+        Container(height: 1, color: AppTheme.border),
         Expanded(child: IndexedStack(index: _tab, children: screens)),
       ]),
 
-      // ── BOTTOM NAV ──────────────────────────────────────────────────
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(border: Border(top: BorderSide(color: Color(0xFFE2E8F0)))),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: AppTheme.border))),
         child: BottomNavigationBar(
           currentIndex: _tab,
           onTap: (i) => setState(() => _tab = i),
           type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.white,
-          selectedItemColor: const Color(0xFF2563EB),
-          unselectedItemColor: const Color(0xFF94A3B8),
+          selectedItemColor: AppTheme.primary,
+          unselectedItemColor: AppTheme.textSub,
           selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 10),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 10),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w400, fontSize: 10),
           elevation: 0,
           items: List.generate(3, (i) => BottomNavigationBarItem(
             icon: Icon(_icons[i], size: 22),
@@ -225,6 +187,29 @@ class _MainShellState extends State<MainShell> {
       ),
     );
   }
+}
+
+class _FilterDropdown<T> extends StatelessWidget {
+  final T value;
+  final List<DropdownMenuItem<T>> items;
+  final ValueChanged<T?> onChanged;
+  const _FilterDropdown({required this.value, required this.items, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10),
+    decoration: BoxDecoration(
+      color: AppTheme.bg,
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: AppTheme.border)),
+    child: DropdownButtonHideUnderline(
+      child: DropdownButton<T>(
+        value: value, isExpanded: true,
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.dark),
+        icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: AppTheme.textSub),
+        items: items,
+        onChanged: onChanged,
+      )));
 }
 
 class MyApp extends StatelessWidget {

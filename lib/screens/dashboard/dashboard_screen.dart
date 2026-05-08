@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/advisor.dart';
 import '../../services/sales_service.dart';
 import '../../services/traffic_service.dart';
+import '../../theme.dart';
 
 class DashboardScreen extends StatefulWidget {
   final Advisor advisor;
@@ -21,8 +22,8 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  static const kDark = Color(0xFF1E293B);
-  static const kBlue = Color(0xFF2563EB);
+  static const kDark = AppTheme.dark;
+  static const kBlue = AppTheme.primary;
 
   bool _loading = true;
   double _mtd = 0, _target = 0, _prevMtd = 0;
@@ -108,17 +109,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)],
                   ),
                   child: Stack(children: [
-                    // Decorative circle
                     Positioned(right: -24, top: -24, child: Container(
                       width: 112, height: 112,
-                      decoration: BoxDecoration(color: const Color(0xFFEFF6FF), shape: BoxShape.circle),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [AppTheme.primary.withValues(alpha: 0.12), AppTheme.secondary.withValues(alpha: 0.06)],
+                        ),
+                        shape: BoxShape.circle),
                     )),
                     Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Row(children: [
                         Text(
                           adv.isManager ? 'STORE PERFORMANCE (MTD)' : 'MY PERFORMANCE (MTD)',
                           style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800,
-                            color: Color(0xFF60A5FA), letterSpacing: 1.5),
+                            color: AppTheme.primary, letterSpacing: 1.5),
                         ),
                         const SizedBox(width: 8),
                         Container(

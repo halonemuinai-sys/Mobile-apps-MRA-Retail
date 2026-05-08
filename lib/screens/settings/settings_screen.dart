@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../models/advisor.dart';
 import '../../services/auth_service.dart';
+import '../../theme.dart';
 
 class SettingsScreen extends StatefulWidget {
   final Advisor advisor;
@@ -67,7 +68,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF1E40AF)),
+          borderSide: const BorderSide(color: AppTheme.primary),
         ),
       ),
     );
@@ -85,33 +86,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF0A1628), Color(0xFF1E3A5F)],
-                begin: Alignment.topLeft, end: Alignment.bottomRight),
-              borderRadius: BorderRadius.circular(16)),
+              gradient: AppTheme.gradient,
+              borderRadius: BorderRadius.circular(20)),
             child: Row(children: [
               CircleAvatar(
-                radius: 26, backgroundColor: const Color(0xFFD4AF37),
+                radius: 26,
+                backgroundColor: Colors.white.withValues(alpha: 0.25),
                 child: Text(adv.name.isNotEmpty ? adv.name[0].toUpperCase() : '?',
-                  style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 20)),
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20)),
               ),
               const SizedBox(width: 14),
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(adv.name, style: const TextStyle(color: Colors.white,
-                  fontWeight: FontWeight.bold, fontSize: 16)),
-                Text(adv.store, style: const TextStyle(color: Color(0xFF8899AA), fontSize: 12)),
-                const SizedBox(height: 4),
+                  fontWeight: FontWeight.w700, fontSize: 16)),
+                Text(adv.store, style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12)),
+                const SizedBox(height: 6),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFD4AF37).withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFD4AF37).withOpacity(0.4)),
-                  ),
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12)),
                   child: Text(adv.role.toUpperCase().replaceAll('_', ' '),
-                    style: const TextStyle(color: Color(0xFFD4AF37), fontSize: 9, fontWeight: FontWeight.w900)),
+                    style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
                 ),
-              ]),
+              ])),
             ]),
           ),
           const SizedBox(height: 24),
@@ -136,7 +134,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: ElevatedButton(
                   onPressed: _changingPin ? null : _changePin,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1E40AF),
+                    backgroundColor: AppTheme.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -170,7 +168,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 32),
-          const Center(child: Text('Bvlgari Advisor Portal v1.0.0\n© 2026 MRA Retail',
+          const Center(child: Text('MPI Advisor Portal v1.0.0\n© 2026 MPI Retail',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 10, color: Color(0xFFCBD5E1), height: 1.8))),
         ],
