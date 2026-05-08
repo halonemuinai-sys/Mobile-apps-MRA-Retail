@@ -184,8 +184,8 @@ class _CrmInputScreenState extends State<CrmInputScreen> {
                       decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(12)),
                       child: Row(
                         children: [
-                          _SegmentButton('Domestic', _domisiliType == 'Dalam Negeri', () => setState(() { _domisiliType = 'Dalam Negeri'; _selectedDomisili = null; })),
-                          _SegmentButton('International', _domisiliType == 'Luar Negeri', () => setState(() { _domisiliType = 'Luar Negeri'; _selectedDomisili = null; })),
+                          _segmentButton('Domestic', _domisiliType == 'Dalam Negeri', () => setState(() { _domisiliType = 'Dalam Negeri'; _selectedDomisili = null; })),
+                          _segmentButton('International', _domisiliType == 'Luar Negeri', () => setState(() { _domisiliType = 'Luar Negeri'; _selectedDomisili = null; })),
                         ],
                       ),
                     ),
@@ -241,7 +241,7 @@ class _CrmInputScreenState extends State<CrmInputScreen> {
                   Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      boxShadow: [BoxShadow(color: AppTheme.primary.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 8))],
+                      boxShadow: [BoxShadow(color: AppTheme.primary.withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 8))],
                     ),
                     child: ElevatedButton(
                       onPressed: _save,
@@ -262,7 +262,7 @@ class _CrmInputScreenState extends State<CrmInputScreen> {
     );
   }
 
-  Widget _SegmentButton(String label, bool active, VoidCallback onTap) {
+  Widget _segmentButton(String label, bool active, VoidCallback onTap) {
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
@@ -271,7 +271,7 @@ class _CrmInputScreenState extends State<CrmInputScreen> {
           decoration: BoxDecoration(
             color: active ? Colors.white : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
-            boxShadow: active ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))] : null,
+            boxShadow: active ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))] : null,
           ),
           child: Text(label, textAlign: TextAlign.center, style: TextStyle(fontSize: 12, fontWeight: active ? FontWeight.bold : FontWeight.w500, color: active ? AppTheme.primary : const Color(0xFF64748B))),
         ),
@@ -314,7 +314,7 @@ class _Card extends StatelessWidget {
     decoration: BoxDecoration(
       color: Colors.white, 
       borderRadius: BorderRadius.circular(24), 
-      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 20, offset: const Offset(0, 4))],
+      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 20, offset: const Offset(0, 4))],
       border: Border.all(color: const Color(0xFFF1F5F9))
     ),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children));
@@ -381,7 +381,7 @@ class _Field extends StatelessWidget {
           prefixText: prefixText,
           prefixStyle: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 14),
           labelStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8), fontWeight: FontWeight.w500),
-          hintStyle: TextStyle(fontSize: 13, color: const Color(0xFF94A3B8).withOpacity(0.5)),
+          hintStyle: TextStyle(fontSize: 13, color: const Color(0xFF94A3B8).withValues(alpha: 0.5)),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           filled: true,
           fillColor: const Color(0xFFF8FAFC),
