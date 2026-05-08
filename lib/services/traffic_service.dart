@@ -101,4 +101,8 @@ class TrafficService {
     }
     return map;
   }
+
+  static Future<void> saveTraffic(Map<String, dynamic> data) async {
+    await _sb.from('mirror_traffic').insert(data);
+  }
 }

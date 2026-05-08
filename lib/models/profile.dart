@@ -9,10 +9,13 @@ class CrmProfile {
   final String noHp;
   final String email;
   final String umur;
+  final String tinggiBadan;
+  final String bentukTubuh;
   final String domisili;
   final String kewarganegaraan;
   final String statusPelanggan;
   final String statusPernikahan;
+  final String memilikiAnak;
   final String pekerjaan;
   final String fashionStyle;
   final String hobby;
@@ -41,10 +44,13 @@ class CrmProfile {
     required this.noHp,
     required this.email,
     required this.umur,
+    required this.tinggiBadan,
+    required this.bentukTubuh,
     required this.domisili,
     required this.kewarganegaraan,
     required this.statusPelanggan,
     required this.statusPernikahan,
+    required this.memilikiAnak,
     required this.pekerjaan,
     required this.fashionStyle,
     required this.hobby,
@@ -86,10 +92,13 @@ class CrmProfile {
       noHp:                  (m['no_hp'] as String?) ?? '',
       email:                 (m['email'] as String?) ?? '',
       umur:                  (m['umur'] as String?) ?? '',
+      tinggiBadan:           (m['tinggi_badan'] as String?) ?? '',
+      bentukTubuh:           (m['bentuk_tubuh'] as String?) ?? '',
       domisili:              (m['domisili'] as String?) ?? '',
       kewarganegaraan:       (m['kewarganegaraan'] as String?) ?? '',
       statusPelanggan:       (m['status_pelanggan'] as String?) ?? '',
       statusPernikahan:      (m['status_pernikahan'] as String?) ?? '',
+      memilikiAnak:          (m['memiliki_anak'] as String?) ?? '',
       pekerjaan:             (m['pekerjaan'] as String?) ?? '',
       fashionStyle:          (m['fashion_style'] as String?) ?? '',
       hobby:                 (m['hobby'] as String?) ?? '',

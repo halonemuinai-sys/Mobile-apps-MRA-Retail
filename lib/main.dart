@@ -82,9 +82,9 @@ class _MainShellState extends State<MainShell> {
   static const _months = ['January','February','March','April','May','June',
     'July','August','September','October','November','December'];
 
-  static const _labels  = ['Beranda', 'Prospek', 'Laporan'];
-  static const _icons   = [Icons.home_outlined,   Icons.people_outline,    Icons.bar_chart_outlined];
-  static const _actives = [Icons.home_rounded,    Icons.people_rounded,    Icons.bar_chart_rounded];
+  static const _labels  = ['Beranda', 'Prospek', 'CRM', 'Laporan'];
+  static const _icons   = [Icons.home_outlined,   Icons.people_outline,    Icons.person_search_outlined, Icons.bar_chart_outlined];
+  static const _actives = [Icons.home_rounded,    Icons.people_rounded,    Icons.person_search_rounded, Icons.bar_chart_rounded];
 
   void _navTo(int tab) => setState(() => _tab = tab);
 
@@ -94,8 +94,9 @@ class _MainShellState extends State<MainShell> {
 
     final screens = [
       DashboardScreen(advisor: adv, month: _month, year: _year,
-        onNavProspect: () => _navTo(1), onNavLaporan: () => _navTo(2)),
+        onNavProspect: () => _navTo(1), onNavLaporan: () => _navTo(3)),
       ProspectsScreen(advisor: adv, month: _month, year: _year),
+      CrmSearchScreen(advisor: adv),
       ReportsScreen(advisor: adv, month: _month, year: _year),
     ];
 
@@ -178,7 +179,7 @@ class _MainShellState extends State<MainShell> {
           selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 10),
           unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w400, fontSize: 10),
           elevation: 0,
-          items: List.generate(3, (i) => BottomNavigationBarItem(
+          items: List.generate(4, (i) => BottomNavigationBarItem(
             icon: Icon(_icons[i], size: 22),
             activeIcon: Icon(_actives[i], size: 22),
             label: _labels[i],
