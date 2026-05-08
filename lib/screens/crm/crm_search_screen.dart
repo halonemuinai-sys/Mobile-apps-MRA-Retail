@@ -122,11 +122,11 @@ class _CrmSearchScreenState extends State<CrmSearchScreen> {
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border(left: BorderSide(color: sc, width: 3)),
-                                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6)],
+                                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)],
                               ),
                               child: Row(children: [
                                 CircleAvatar(
-                                  radius: 20, backgroundColor: sc.withOpacity(0.15),
+                                  radius: 20, backgroundColor: sc.withValues(alpha: 0.15),
                                   child: Text(p.initials, style: TextStyle(color: sc,
                                     fontWeight: FontWeight.bold, fontSize: 14)),
                                 ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/advisor.dart';
 import '../../services/sales_service.dart';
 import '../../services/traffic_service.dart';
+import '../reports/transaction_list_screen.dart';
 import '../../theme.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -31,7 +32,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _prospectCount = 0, _followUpCount = 0;
   List<double> _monthly = List.filled(12, 0);
 
-  static const _mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   static const _mNamesFull = ['January','February','March','April','May','June',
     'July','August','September','October','November','December'];
 
@@ -230,6 +230,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       onTap: widget.onNavLaporan,
                     ),
                   ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _QuickAction(
+                      icon: Icons.receipt_long_outlined,
+                      iconColor: const Color(0xFFEA580C),
+                      iconBg: const Color(0xFFFFF7ED),
+                      label: 'Transaksi',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => TransactionListScreen(
+                              advisor: widget.advisor,
+                              month: widget.month,
+                              year: widget.year,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                 ]),
                 const SizedBox(height: 14),
 
@@ -368,7 +389,7 @@ class _MonthlyChartState extends State<_MonthlyChart> {
                 getTooltipColor: (_) => const Color(0xFF1E293B),
                 tooltipRoundedRadius: 8,
                 tooltipPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                getTooltipItem: (group, _, rod, __) => BarTooltipItem(
+                getTooltipItem: (group, _, rod, _) => BarTooltipItem(
                   '${_mNames[group.x]}\nIDR ${_fmtTooltip(widget.monthly[group.x])}',
                   const TextStyle(color: Colors.white, fontSize: 11,
                     fontWeight: FontWeight.w600, height: 1.5),

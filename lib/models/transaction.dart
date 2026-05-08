@@ -1,4 +1,5 @@
 class Transaction {
+  final int id;
   final String transNo;
   final String transactionDate;
   final String customer;
@@ -9,11 +10,13 @@ class Transaction {
   final double netSales;
   final double grossSales;
   final double valDisc;
+  final double comm;
   final int qty;
   final String sapCode;
   final String catalogueCode;
 
   const Transaction({
+    required this.id,
     required this.transNo,
     required this.transactionDate,
     required this.customer,
@@ -24,6 +27,7 @@ class Transaction {
     required this.netSales,
     required this.grossSales,
     required this.valDisc,
+    required this.comm,
     required this.qty,
     required this.sapCode,
     required this.catalogueCode,
@@ -31,6 +35,7 @@ class Transaction {
 
   factory Transaction.fromMap(Map<String, dynamic> m) {
     return Transaction(
+      id:              (m['id'] as int?) ?? 0,
       transNo:         (m['trans_no'] as String?) ?? '',
       transactionDate: (m['transaction_date'] as String?) ?? '',
       customer:        (m['customer'] as String?) ?? '',
@@ -41,6 +46,7 @@ class Transaction {
       netSales:        ((m['net_sales'] as num?) ?? 0).toDouble(),
       grossSales:      ((m['gross_sales'] as num?) ?? 0).toDouble(),
       valDisc:         ((m['val_disc'] as num?) ?? 0).toDouble(),
+      comm:            ((m['comm'] as num?) ?? 0).toDouble(),
       qty:             ((m['qty'] as num?) ?? 0).toInt(),
       sapCode:         (m['sap_code'] as String?) ?? '',
       catalogueCode:   (m['catalogue_code'] as String?) ?? '',

@@ -25,7 +25,7 @@ class TrafficService {
     required int month,
     required int year,
   }) async {
-    final pad = (int n) => n.toString().padLeft(2, '0');
+    String pad(int n) => n.toString().padLeft(2, '0');
     final lastDay = DateTime(year, month + 1, 0).day;
     final from = '$year-${pad(month)}-01';
     final to   = '$year-${pad(month)}-${pad(lastDay)}';
@@ -61,13 +61,21 @@ class TrafficService {
     int walkIn = 0, followUp = 0, delivery = 0, service = 0, online = 0, newProfile = 0;
     for (final r in rows) {
       final s = r.status.toLowerCase();
-      if (s.contains('walk')) walkIn++;
-      else if (s.contains('follow')) followUp++;
-      else if (s.contains('delivery') || s.contains('showing')) delivery++;
-      else if (s.contains('repair') || s.contains('service')) service++;
-      else if (s.contains('online')) online++;
+      if (s.contains('walk')) {
+        walkIn++;
+      } else if (s.contains('follow')) {
+        followUp++;
+      } else if (s.contains('delivery') || s.contains('showing')) {
+        delivery++;
+      } else if (s.contains('repair') || s.contains('service')) {
+        service++;
+      } else if (s.contains('online')) {
+        online++;
+      }
       final p = r.prospectItem.toLowerCase();
-      if (p.contains('baru') || p.contains('potensial')) newProfile++;
+      if (p.contains('baru') || p.contains('potensial')) {
+        newProfile++;
+      }
     }
     return ProspectCounts(
       total: rows.length, walkIn: walkIn, followUp: followUp,

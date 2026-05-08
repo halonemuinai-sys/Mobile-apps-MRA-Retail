@@ -52,9 +52,9 @@ class CrmDetailScreen extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFD97706).withOpacity(0.2),
+                        color: const Color(0xFFD97706).withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFD97706).withOpacity(0.4)),
+                        border: Border.all(color: const Color(0xFFD97706).withValues(alpha: 0.4)),
                       ),
                       child: Text(p.statusPelanggan,
                         style: const TextStyle(color: Color(0xFFD97706), fontSize: 9, fontWeight: FontWeight.w800)),
@@ -119,17 +119,22 @@ class _StoreBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Color c;
-    if (store.contains('Intermark')) c = const Color(0xFF1E40AF);
-    else if (store.contains('Senayan') || store.contains('Superstore')) c = const Color(0xFF7C3AED);
-    else if (store.toLowerCase().contains('bali')) c = const Color(0xFF059669);
-    else c = const Color(0xFF64748B);
+    if (store.contains('Intermark')) {
+      c = const Color(0xFF1E40AF);
+    } else if (store.contains('Senayan') || store.contains('Superstore')) {
+      c = const Color(0xFF7C3AED);
+    } else if (store.toLowerCase().contains('bali')) {
+      c = const Color(0xFF059669);
+    } else {
+      c = const Color(0xFF64748B);
+    }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: c.withOpacity(0.2),
+        color: c.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: c.withOpacity(0.4)),
+        border: Border.all(color: c.withValues(alpha: 0.4)),
       ),
       child: Text(store.isEmpty ? '—' : store,
         style: TextStyle(color: c, fontSize: 9, fontWeight: FontWeight.w800)),
@@ -163,7 +168,7 @@ class _Section extends StatelessWidget {
       ),
       Container(
         decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6)]),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)]),
         child: Column(
           children: nonEmpty.asMap().entries.map((entry) {
             final isLast = entry.key == nonEmpty.length - 1;

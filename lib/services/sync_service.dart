@@ -1,0 +1,1 @@
+// Fitur sinkronisasi dinonaktifkan sementara.

@@ -194,8 +194,15 @@ class SalesService {
         .eq('salesman', advisorName)
         .gte('transaction_date', from)
         .lte('transaction_date', to)
-        .order('transaction_date', ascending: false)
-        .limit(50);
+        .order('transaction_date', ascending: false);
     return (res as List).map((r) => Transaction.fromMap(r)).toList();
+  }
+
+  // Update commission for a transaction
+  static Future<void> updateCommission(int id, double value) async {
+    await _sb
+        .from('clean_master')
+        .update({'comm': value})
+        .eq('id', id);
   }
 }
