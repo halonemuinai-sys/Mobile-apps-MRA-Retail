@@ -106,6 +106,7 @@ class _CrmInputScreenState extends State<CrmInputScreen> {
         'notes': _karakter.text,
         'customer_advisor': widget.advisor.name,
         'lokasi_store': widget.advisor.store,
+        'tanggal_input': DateTime.now().toIso8601String().split('T')[0],
         'created_at': DateTime.now().toIso8601String(),
         'status_pelanggan': _selectedStatusPelanggan ?? 'New',
       };

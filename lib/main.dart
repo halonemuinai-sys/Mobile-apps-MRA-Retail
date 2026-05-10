@@ -11,6 +11,7 @@ import 'screens/settings/settings_screen.dart';
 import 'services/auth_service.dart';
 import 'supabase_config.dart';
 import 'theme.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -101,41 +102,44 @@ class _MainShellState extends State<MainShell> {
     ];
 
     return Scaffold(
-      backgroundColor: AppTheme.bg,
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.white,
+        elevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: AppTheme.border)),
+          child: Container(height: 1, color: const Color(0xFFF1F5F9))),
         title: Row(children: [
           Container(
-            width: 36, height: 36,
+            width: 44, height: 44,
             decoration: BoxDecoration(
-              gradient: AppTheme.gradient,
-              borderRadius: BorderRadius.circular(10)),
-            child: const Icon(Icons.storefront_rounded, color: Colors.white, size: 18)),
-          const SizedBox(width: 10),
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(12)),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.asset('assets/logo.png', fit: BoxFit.contain))),
+          const SizedBox(width: 12),
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('MPI Advisor', style: TextStyle(
-              fontSize: 14, fontWeight: FontWeight.w800, color: AppTheme.dark)),
-            Text(adv.name, style: const TextStyle(
-              fontSize: 11, color: AppTheme.textSub, fontWeight: FontWeight.w500)),
+            Text('MPI Advisor', style: GoogleFonts.inter(
+              fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+            Text(adv.name, style: GoogleFonts.inter(
+              fontSize: 13, color: const Color(0xFF64748B), fontWeight: FontWeight.w500)),
           ]),
         ]),
         actions: [
           IconButton(
-            icon: const Icon(Icons.tune_rounded, size: 20, color: AppTheme.textSub),
+            icon: const Icon(Icons.tune_rounded, size: 22, color: Color(0xFF64748B)),
             tooltip: 'Pengaturan',
             onPressed: () => Navigator.push(context, MaterialPageRoute(
               builder: (_) => Scaffold(
-                backgroundColor: AppTheme.bg,
-                appBar: AppBar(title: const Text('Pengaturan'),
+                backgroundColor: const Color(0xFFF8FAFC),
+                appBar: AppBar(title: Text('Pengaturan', style: GoogleFonts.inter(color: const Color(0xFF0F172A), fontWeight: FontWeight.w600)),
                   backgroundColor: Colors.white, surfaceTintColor: Colors.white),
                 body: SettingsScreen(advisor: adv, onLogout: widget.onLogout)))),
           ),
           IconButton(
-            icon: const Icon(Icons.power_settings_new_rounded, size: 20, color: AppTheme.textSub),
+            icon: const Icon(Icons.power_settings_new_rounded, size: 22, color: Color(0xFF64748B)),
             tooltip: 'Keluar',
             onPressed: () async { await AuthService.logout(); widget.onLogout(); }),
           const SizedBox(width: 4),
@@ -146,22 +150,22 @@ class _MainShellState extends State<MainShell> {
         // Month/Year filter bar
         Container(
           color: Colors.white,
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
           child: Row(children: [
-            const Icon(Icons.calendar_today_rounded, size: 14, color: AppTheme.textSub),
-            const SizedBox(width: 8),
+            const Icon(Icons.calendar_today_outlined, size: 20, color: Color(0xFF64748B)),
+            const SizedBox(width: 12),
             Expanded(child: _FilterDropdown<int>(
               value: _month,
-              items: List.generate(12, (i) => DropdownMenuItem(value: i+1, child: Text(_months[i]))),
+              items: List.generate(12, (i) => DropdownMenuItem(value: i+1, child: Text(_months[i], style: GoogleFonts.inter()))),
               onChanged: (v) { if (v != null) setState(() => _month = v); })),
-            const SizedBox(width: 8),
-            SizedBox(width: 86, child: _FilterDropdown<int>(
+            const SizedBox(width: 12),
+            SizedBox(width: 100, child: _FilterDropdown<int>(
               value: _year,
-              items: [2024,2025,2026].map((y) => DropdownMenuItem(value: y, child: Text('$y'))).toList(),
+              items: [2024,2025,2026].map((y) => DropdownMenuItem(value: y, child: Text('$y', style: GoogleFonts.inter()))).toList(),
               onChanged: (v) { if (v != null) setState(() => _year = v); })),
           ]),
         ),
-        Container(height: 1, color: AppTheme.border),
+        Container(height: 1, color: const Color(0xFFF1F5F9)),
         Expanded(child: IndexedStack(index: _tab, children: screens)),
       ]),
 
@@ -198,16 +202,16 @@ class _FilterDropdown<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10),
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
     decoration: BoxDecoration(
-      color: AppTheme.bg,
+      color: const Color(0xFFF4F6F8),
       borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: AppTheme.border)),
+      border: Border.all(color: const Color(0xFFE2E8F0))),
     child: DropdownButtonHideUnderline(
       child: DropdownButton<T>(
         value: value, isExpanded: true,
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.dark),
-        icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: AppTheme.textSub),
+        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: const Color(0xFF0F172A)),
+        icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: Color(0xFF64748B)),
         items: items,
         onChanged: onChanged,
       )));

@@ -73,7 +73,7 @@ class TrafficService {
         online++;
       }
       final p = r.prospectItem.toLowerCase();
-      if (p.contains('baru') || p.contains('potensial')) {
+      if (p.contains('potensial pelanggan baru') || p == 'pelanggan baru') {
         newProfile++;
       }
     }

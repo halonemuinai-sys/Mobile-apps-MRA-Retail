@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../../models/advisor.dart';
 import '../../services/sales_service.dart';
+import '../../services/profile_service.dart';
 import '../../services/traffic_service.dart';
 import '../../theme.dart';
 
@@ -19,7 +20,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
   bool _loading = true;
   Map<String, Map<String, dynamic>> _categories = {};
   List<Map<String, dynamic>> _leaderboard = [];
-  Map<String, int> _trafficBreakdown = {};
+  ProspectCounts? _prospectCounts;
+  int _newProfileCount = 0;
   List<double> _monthly = List.filled(12, 0);
 
   static const _mNamesFull = ['January','February','March','April','May','June',
@@ -42,7 +44,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
         store: adv.store, month: widget.month, year: widget.year),
       SalesService.getMonthlyChart(advisorName: adv.name, isManager: adv.isManager,
         store: adv.store, year: widget.year),
-      TrafficService.getTrafficBreakdown(advisorName: adv.name, isManager: adv.isManager,
+      TrafficService.getProspectCounts(advisorName: adv.name, isManager: adv.isManager,
+        store: adv.store, month: widget.month, year: widget.year),
+      ProfileService.getNewProfileCount(advisorName: adv.name, isManager: adv.isManager,
         store: adv.store, month: widget.month, year: widget.year),
     ]);
 
@@ -54,7 +58,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
     setState(() {
       _categories      = results[0] as Map<String, Map<String, dynamic>>;
       _monthly         = results[1] as List<double>;
-      _trafficBreakdown = results[2] as Map<String, int>;
+      _prospectCounts  = results[2] as ProspectCounts;
+      _newProfileCount = results[3] as int;
       _leaderboard     = lb;
       _loading         = false;
     });
@@ -176,35 +181,67 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 const SizedBox(height: 16),
 
                 // ── TRAFFIC BREAKDOWN ──
-                if (_trafficBreakdown.isNotEmpty) ...[
+                if (_prospectCounts != null) ...[
                   _SectionLabel('LAPORAN TRAFFIC CRM (BULAN INI)'),
                   const SizedBox(height: 8),
-                  _Card(child: Column(
-                    children: _trafficBreakdown.entries.map((e) {
-                      final total = _trafficBreakdown.values.fold<int>(0, (s, v) => s + v);
-                      final pct = total > 0 ? e.value / total : 0.0;
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                        child: Row(children: [
-                          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                              Text(e.key, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                              Text('${e.value}', style: const TextStyle(fontSize: 13,
-                                fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-                            ]),
-                            const SizedBox(height: 4),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: pct, minHeight: 4,
-                                backgroundColor: const Color(0xFFE2E8F0),
-                                valueColor: const AlwaysStoppedAnimation(Color(0xFF7C3AED))),
-                            ),
-                          ])),
-                        ]),
-                      );
-                    }).toList(),
-                  )),
+                  _Card(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _TrafficRow('Walk-In / New', _prospectCounts!.walkIn),
+                        _TrafficRow('Follow Up', _prospectCounts!.followUp),
+                        _TrafficRow('Delivery & Showing', _prospectCounts!.delivery),
+                        _TrafficRow('Service & Repair', _prospectCounts!.service),
+                        _TrafficRow('Online Only', _prospectCounts!.online),
+                        const SizedBox(height: 12),
+                        const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                        const SizedBox(height: 12),
+                        _TrafficStatusRow('STATUS: POTENSIAL / BARU', _prospectCounts!.newProfile),
+                        _TrafficStatusRow('DATA PROFILING (SMI) / NEW', _newProfileCount),
+                        const SizedBox(height: 12),
+                        const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('TOTAL TRAFFIC', style: TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w900, color: Color(0xFF0F172A))),
+                            Text('${_prospectCounts!.total}', style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF0F172A))),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        // Conversion Rate Card
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5FE),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('CONVERSION RATE', style: TextStyle(
+                                    fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF4F46E5), letterSpacing: 0.5)),
+                                  const SizedBox(height: 4),
+                                  Text('$totalQty Trx / ${_prospectCounts!.total} Traffic', style: const TextStyle(
+                                    fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500)),
+                                ],
+                              ),
+                              Text(
+                                '${_prospectCounts!.total > 0 ? (totalQty / _prospectCounts!.total * 100).toStringAsFixed(1) : '0'}%',
+                                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFF4F46E5)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 16),
                 ],
 
@@ -239,11 +276,12 @@ class _SectionLabel extends StatelessWidget {
 
 class _Card extends StatelessWidget {
   final Widget child;
-  const _Card({required this.child});
+  final EdgeInsetsGeometry? padding;
+  const _Card({required this.child, this.padding});
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(16),
+    padding: padding ?? const EdgeInsets.all(16),
     decoration: BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(20),
@@ -251,6 +289,42 @@ class _Card extends StatelessWidget {
       boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)],
     ),
     child: child,
+  );
+}
+
+class _TrafficRow extends StatelessWidget {
+  final String label;
+  final int count;
+  const _TrafficRow(this.label, this.count);
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 10),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 14, color: Color(0xFF64748B), fontWeight: FontWeight.w500)),
+        Text('$count', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+      ],
+    ),
+  );
+}
+
+class _TrafficStatusRow extends StatelessWidget {
+  final String label;
+  final int count;
+  const _TrafficStatusRow(this.label, this.count);
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF94A3B8), letterSpacing: 0.5)),
+        Text('+$count Klien', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF4F46E5))),
+      ],
+    ),
   );
 }
 

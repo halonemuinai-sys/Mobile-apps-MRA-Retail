@@ -36,4 +36,28 @@ class ProfileService {
   static Future<void> createProfile(Map<String, dynamic> data) async {
     await _sb.from('crm_profiling').insert(data);
   }
+
+  static Future<int> getNewProfileCount({
+    required String advisorName,
+    required bool isManager,
+    required String store,
+    required int month,
+    required int year,
+  }) async {
+    String pad(int n) => n.toString().padLeft(2, '0');
+    final lastDay = DateTime(year, month + 1, 0).day;
+    final from = '$year-${pad(month)}-01';
+    final to   = '$year-${pad(month)}-${pad(lastDay)}';
+
+    var query = _sb.from('crm_profiling').select('id');
+
+    if (isManager) {
+      query = query.ilike('lokasi_store', '%${store.split(' ').last}%');
+    } else {
+      query = query.eq('customer_advisor', advisorName);
+    }
+
+    final res = await query.gte('tanggal_input', from).lte('tanggal_input', to);
+    return (res as List).length;
+  }
 }
