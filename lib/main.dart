@@ -9,13 +9,19 @@ import 'screens/reports/reports_screen.dart';
 import 'screens/crm/crm_search_screen.dart';
 import 'screens/settings/settings_screen.dart';
 import 'services/auth_service.dart';
+import 'services/sales_service.dart';
 import 'supabase_config.dart';
 import 'theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
+  ]);
   await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
   runApp(const BvlgariAdvisorApp());
 }
@@ -80,6 +86,10 @@ class _MainShellState extends State<MainShell> {
   late int _month = DateTime.now().month;
   late int _year  = DateTime.now().year;
 
+  // Store selector (for Ops Manager)
+  String _selectedStore = 'All Stores';
+  List<String> _availableStores = [];
+
   static const _months = ['January','February','March','April','May','June',
     'July','August','September','October','November','December'];
 
@@ -87,88 +97,190 @@ class _MainShellState extends State<MainShell> {
   static const _icons   = [Icons.home_outlined,   Icons.people_outline,    Icons.person_search_outlined, Icons.bar_chart_outlined];
   static const _actives = [Icons.home_rounded,    Icons.people_rounded,    Icons.person_search_rounded, Icons.bar_chart_rounded];
 
+  @override
+  void initState() {
+    super.initState();
+    if (widget.advisor.isOpsManager) _loadStores();
+  }
+
+  Future<void> _loadStores() async {
+    final stores = await SalesService.getAvailableStores();
+    if (mounted) setState(() => _availableStores = stores);
+  }
+
+  /// The effective store: for OpsManager use dropdown; for others use their store.
+  String get _effectiveStore {
+    if (widget.advisor.isOpsManager) return _selectedStore;
+    return widget.advisor.store;
+  }
+
   void _navTo(int tab) => setState(() => _tab = tab);
+
+  // ── Breakpoint: ≥600px is treated as tablet ──
+  bool _isTablet(BuildContext ctx) => MediaQuery.of(ctx).size.width >= 600;
+
+  // Shared AppBar used by both layouts
+  PreferredSizeWidget _buildAppBar(Advisor adv) {
+    return AppBar(
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.white,
+      elevation: 0,
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(1),
+        child: Container(height: 1, color: const Color(0xFFF1F5F9))),
+      title: Row(children: [
+        Container(
+          width: 44, height: 44,
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(12)),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.asset('assets/logo.png', fit: BoxFit.contain))),
+        const SizedBox(width: 12),
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('MPI Advisor', style: GoogleFonts.inter(
+            fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+          Text(adv.name, style: GoogleFonts.inter(
+            fontSize: 13, color: const Color(0xFF64748B), fontWeight: FontWeight.w500)),
+        ]),
+      ]),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.tune_rounded, size: 22, color: Color(0xFF64748B)),
+          tooltip: 'Pengaturan',
+          onPressed: () => Navigator.push(context, MaterialPageRoute(
+            builder: (_) => Scaffold(
+              backgroundColor: const Color(0xFFF8FAFC),
+              appBar: AppBar(title: Text('Pengaturan', style: GoogleFonts.inter(color: const Color(0xFF0F172A), fontWeight: FontWeight.w600)),
+                backgroundColor: Colors.white, surfaceTintColor: Colors.white),
+              body: SettingsScreen(advisor: adv, onLogout: widget.onLogout)))),
+        ),
+        IconButton(
+          icon: const Icon(Icons.power_settings_new_rounded, size: 22, color: Color(0xFF64748B)),
+          tooltip: 'Keluar',
+          onPressed: () async { await AuthService.logout(); widget.onLogout(); }),
+        const SizedBox(width: 4),
+      ],
+    );
+  }
+
+  // Shared filter bar
+  Widget _buildFilterBar() {
+    final adv = widget.advisor;
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Column(children: [
+        // Store selector (only for Ops Manager)
+        if (adv.isOpsManager) ...[
+          Row(children: [
+            const Icon(Icons.store_outlined, size: 20, color: Color(0xFF7C3AED)),
+            const SizedBox(width: 12),
+            Expanded(child: _FilterDropdown<String>(
+              value: _selectedStore,
+              items: [
+                DropdownMenuItem(value: 'All Stores',
+                  child: Text('All Stores', style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: const Color(0xFF7C3AED)))),
+                ..._availableStores.map((s) => DropdownMenuItem(value: s,
+                  child: Text(s, style: GoogleFonts.inter()))),
+              ],
+              onChanged: (v) { if (v != null) setState(() => _selectedStore = v); },
+            )),
+          ]),
+          const SizedBox(height: 8),
+        ],
+        Row(children: [
+          const Icon(Icons.calendar_today_outlined, size: 20, color: Color(0xFF64748B)),
+          const SizedBox(width: 12),
+          Expanded(child: _FilterDropdown<int>(
+            value: _month,
+            items: List.generate(12, (i) => DropdownMenuItem(value: i+1, child: Text(_months[i], style: GoogleFonts.inter()))),
+            onChanged: (v) { if (v != null) setState(() => _month = v); })),
+          const SizedBox(width: 12),
+          SizedBox(width: 100, child: _FilterDropdown<int>(
+            value: _year,
+            items: [2024,2025,2026].map((y) => DropdownMenuItem(value: y, child: Text('$y', style: GoogleFonts.inter()))).toList(),
+            onChanged: (v) { if (v != null) setState(() => _year = v); })),
+        ]),
+      ]),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final adv = widget.advisor;
+    final tablet = _isTablet(context);
+    final store = _effectiveStore;
+
+    // Build an advisor copy with the effective store for downstream usage
+    final effectiveAdv = Advisor(
+      name: adv.name,
+      homeLocation: adv.homeLocation,
+      role: adv.role,
+      store: store,
+    );
 
     final screens = [
-      DashboardScreen(advisor: adv, month: _month, year: _year,
+      DashboardScreen(advisor: effectiveAdv, month: _month, year: _year,
         onNavProspect: () => _navTo(1), onNavLaporan: () => _navTo(3)),
-      ProspectsScreen(advisor: adv, month: _month, year: _year),
-      CrmSearchScreen(advisor: adv),
-      ReportsScreen(advisor: adv, month: _month, year: _year),
+      ProspectsScreen(advisor: effectiveAdv, month: _month, year: _year),
+      CrmSearchScreen(advisor: effectiveAdv),
+      ReportsScreen(advisor: effectiveAdv, month: _month, year: _year),
     ];
 
+    // ── Shared content area ──
+    final content = Column(children: [
+      _buildFilterBar(),
+      Container(height: 1, color: const Color(0xFFF1F5F9)),
+      Expanded(child: IndexedStack(index: _tab, children: screens)),
+    ]);
+
+    // ── TABLET LAYOUT ──
+    if (tablet) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF8FAFC),
+        appBar: _buildAppBar(adv),
+        body: Row(children: [
+          // Sidebar NavigationRail
+          Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              border: Border(right: BorderSide(color: Color(0xFFF1F5F9))),
+            ),
+            child: NavigationRail(
+              selectedIndex: _tab,
+              onDestinationSelected: (i) => setState(() => _tab = i),
+              backgroundColor: Colors.white,
+              indicatorColor: AppTheme.primary.withValues(alpha: 0.1),
+              selectedIconTheme: const IconThemeData(color: AppTheme.primary, size: 24),
+              unselectedIconTheme: const IconThemeData(color: Color(0xFF94A3B8), size: 22),
+              selectedLabelTextStyle: GoogleFonts.inter(
+                fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.primary),
+              unselectedLabelTextStyle: GoogleFonts.inter(
+                fontSize: 11, fontWeight: FontWeight.w400, color: const Color(0xFF94A3B8)),
+              labelType: NavigationRailLabelType.all,
+              minWidth: 80,
+              groupAlignment: -0.5,
+              destinations: List.generate(4, (i) => NavigationRailDestination(
+                icon: Icon(_icons[i]),
+                selectedIcon: Icon(_actives[i]),
+                label: Text(_labels[i]),
+                padding: const EdgeInsets.symmetric(vertical: 6),
+              )),
+            ),
+          ),
+          // Main content
+          Expanded(child: content),
+        ]),
+      );
+    }
+
+    // ── PHONE LAYOUT (default) ──
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: const Color(0xFFF1F5F9))),
-        title: Row(children: [
-          Container(
-            width: 44, height: 44,
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(12)),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.asset('assets/logo.png', fit: BoxFit.contain))),
-          const SizedBox(width: 12),
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('MPI Advisor', style: GoogleFonts.inter(
-              fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
-            Text(adv.name, style: GoogleFonts.inter(
-              fontSize: 13, color: const Color(0xFF64748B), fontWeight: FontWeight.w500)),
-          ]),
-        ]),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.tune_rounded, size: 22, color: Color(0xFF64748B)),
-            tooltip: 'Pengaturan',
-            onPressed: () => Navigator.push(context, MaterialPageRoute(
-              builder: (_) => Scaffold(
-                backgroundColor: const Color(0xFFF8FAFC),
-                appBar: AppBar(title: Text('Pengaturan', style: GoogleFonts.inter(color: const Color(0xFF0F172A), fontWeight: FontWeight.w600)),
-                  backgroundColor: Colors.white, surfaceTintColor: Colors.white),
-                body: SettingsScreen(advisor: adv, onLogout: widget.onLogout)))),
-          ),
-          IconButton(
-            icon: const Icon(Icons.power_settings_new_rounded, size: 22, color: Color(0xFF64748B)),
-            tooltip: 'Keluar',
-            onPressed: () async { await AuthService.logout(); widget.onLogout(); }),
-          const SizedBox(width: 4),
-        ],
-      ),
-
-      body: Column(children: [
-        // Month/Year filter bar
-        Container(
-          color: Colors.white,
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-          child: Row(children: [
-            const Icon(Icons.calendar_today_outlined, size: 20, color: Color(0xFF64748B)),
-            const SizedBox(width: 12),
-            Expanded(child: _FilterDropdown<int>(
-              value: _month,
-              items: List.generate(12, (i) => DropdownMenuItem(value: i+1, child: Text(_months[i], style: GoogleFonts.inter()))),
-              onChanged: (v) { if (v != null) setState(() => _month = v); })),
-            const SizedBox(width: 12),
-            SizedBox(width: 100, child: _FilterDropdown<int>(
-              value: _year,
-              items: [2024,2025,2026].map((y) => DropdownMenuItem(value: y, child: Text('$y', style: GoogleFonts.inter()))).toList(),
-              onChanged: (v) { if (v != null) setState(() => _year = v); })),
-          ]),
-        ),
-        Container(height: 1, color: const Color(0xFFF1F5F9)),
-        Expanded(child: IndexedStack(index: _tab, children: screens)),
-      ]),
-
+      appBar: _buildAppBar(adv),
+      body: content,
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: Colors.white,
@@ -217,119 +329,3 @@ class _FilterDropdown<T> extends StatelessWidget {
       )));
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  // This widget is the root of your application.
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
-          children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ),
-    );
-  }
-}

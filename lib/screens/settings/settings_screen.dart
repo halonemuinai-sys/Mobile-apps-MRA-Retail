@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../models/advisor.dart';
 import '../../services/auth_service.dart';
+import '../../services/sync_service.dart';
 import '../../theme.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -18,6 +19,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _newPin  = TextEditingController();
   final _confPin = TextEditingController();
   bool _changingPin = false;
+
+  // Sync state
+  bool _syncing = false;
+  String? _syncStatus;
+  SyncResult? _syncResult;
+  int _syncMonth = DateTime.now().month;
+  int _syncYear  = DateTime.now().year;
+
+  static const _months = ['January','February','March','April','May','June',
+    'July','August','September','October','November','December'];
 
   Future<void> _changePin() async {
     if (_newPin.text != _confPin.text) {
@@ -43,6 +54,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
       backgroundColor: error ? const Color(0xFFDC2626) : const Color(0xFF059669),
       behavior: SnackBarBehavior.floating,
     ));
+  }
+
+  Future<void> _handleSync() async {
+    setState(() { _syncing = true; _syncStatus = null; _syncResult = null; });
+    final result = await SyncService.syncSalesData(
+      _syncMonth, _syncYear,
+      onProgress: (status) {
+        if (mounted) setState(() => _syncStatus = status);
+      },
+    );
+    if (mounted) {
+      setState(() { _syncing = false; _syncResult = result; });
+      if (result.success) {
+        _showSnack('Sync selesai! ${result.rawInserted} baris baru, ${result.skippedDuplicates} duplikat dilewati.');
+      } else {
+        _showSnack('Sync gagal: ${result.error}', error: true);
+      }
+    }
   }
 
   Widget _pinField(TextEditingController ctrl, String label) {
@@ -144,6 +173,115 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ? const SizedBox(width: 18, height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                       : const Text('Simpan PIN', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ]),
+          ),
+          const SizedBox(height: 24),
+
+          // Sync Sales Data
+          const Text('SYNC DATA PENJUALAN', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900,
+            color: Color(0xFF94A3B8), letterSpacing: 1)),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16),
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)]),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('Tarik data penjualan terbaru dari API Bvlgari ke database.',
+                style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+              const SizedBox(height: 16),
+              Row(children: [
+                const Icon(Icons.calendar_today_outlined, size: 18, color: Color(0xFF64748B)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFE2E8F0))),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<int>(
+                        value: _syncMonth, isExpanded: true,
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                        items: List.generate(12, (i) => DropdownMenuItem(value: i+1, child: Text(_months[i]))),
+                        onChanged: _syncing ? null : (v) { if (v != null) setState(() => _syncMonth = v); },
+                      )),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFE2E8F0))),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<int>(
+                      value: _syncYear,
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                      items: [2024,2025,2026].map((y) => DropdownMenuItem(value: y, child: Text('$y'))).toList(),
+                      onChanged: _syncing ? null : (v) { if (v != null) setState(() => _syncYear = v); },
+                    )),
+                ),
+              ]),
+              const SizedBox(height: 16),
+
+              // Progress indicator
+              if (_syncing && _syncStatus != null) ...[
+                Row(children: [
+                  const SizedBox(width: 16, height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primary)),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(_syncStatus!, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)))),
+                ]),
+                const SizedBox(height: 12),
+              ],
+
+              // Sync result
+              if (_syncResult != null && !_syncing) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _syncResult!.success ? const Color(0xFFF0FDF4) : const Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(children: [
+                    Icon(
+                      _syncResult!.success ? Icons.check_circle_rounded : Icons.error_rounded,
+                      size: 20, color: _syncResult!.success ? const Color(0xFF16A34A) : const Color(0xFFDC2626)),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(
+                      _syncResult!.success
+                        ? '${_syncResult!.rawInserted} baris baru · ${_syncResult!.normalizedInserted} dinormalisasi · ${_syncResult!.skippedDuplicates} duplikat dilewati'
+                        : 'Error: ${_syncResult!.error}',
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
+                        color: _syncResult!.success ? const Color(0xFF16A34A) : const Color(0xFFDC2626)),
+                    )),
+                  ]),
+                ),
+                const SizedBox(height: 12),
+              ],
+
+              // Sync button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _syncing ? null : _handleSync,
+                  icon: _syncing
+                    ? const SizedBox(width: 16, height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.sync_rounded, size: 18),
+                  label: Text(_syncing ? 'Syncing...' : 'Sync dari API',
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                  ),
                 ),
               ),
             ]),

@@ -37,7 +37,9 @@ class TrafficService {
         .lte('tanggal_berkunjung', to);
 
     if (isManager) {
-      q = q.ilike('location', '%${store.split(' ').last}%');
+      if (store != 'All Stores') {
+        q = q.ilike('location', '%${store.split(' ').last}%');
+      }
     } else {
       // GAS uses served_by (col F) to match advisor, not customer_advisor (col E)
       q = q.eq('served_by', advisorName);

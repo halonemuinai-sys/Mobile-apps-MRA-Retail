@@ -33,7 +33,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   @override
   void didUpdateWidget(covariant ReportsScreen old) {
     super.didUpdateWidget(old);
-    if (old.month != widget.month || old.year != widget.year) _load();
+    if (old.month != widget.month || old.year != widget.year || old.advisor.store != widget.advisor.store) _load();
   }
 
   Future<void> _load() async {
@@ -71,6 +71,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
     return v.toStringAsFixed(0);
   }
 
+  String _fmtCurrency(double v) {
+    if (v >= 1e9) return '${(v / 1e9).toStringAsFixed(2)}B';
+    if (v >= 1e6) {
+      final m = v / 1e6;
+      return '${m.toStringAsFixed(m >= 100 ? 0 : 1)}M';
+    }
+    return v.toStringAsFixed(0);
+  }
+
   @override
   Widget build(BuildContext context) {
     final adv = widget.advisor;
@@ -95,24 +104,78 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   _SectionLabel('📊 STAFF LEADERBOARD'),
                   const SizedBox(height: 8),
                   _Card(child: Column(
-                    children: _leaderboard.take(10).toList().asMap().entries.map((e) {
-                      final rank = e.key + 1;
-                      final item = e.value;
-                      final medal = rank == 1 ? '🥇' : rank == 2 ? '🥈' : rank == 3 ? '🥉' : '$rank';
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-                        child: Row(children: [
-                          SizedBox(width: 30, child: Text(medal,
-                            style: const TextStyle(fontSize: 16), textAlign: TextAlign.center)),
-                          const SizedBox(width: 10),
-                          Expanded(child: Text(item['name'] as String,
-                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
-                          Text('IDR ${_fmt(item['net'] as double)}',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13,
-                              color: Color(0xFF2563EB))),
+                    children: [
+                      // Table header
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(4, 4, 4, 10),
+                        child: Row(children: const [
+                          SizedBox(width: 26, child: Text('#', style: TextStyle(fontSize: 9,
+                            fontWeight: FontWeight.w900, color: Color(0xFF94A3B8), letterSpacing: 1))),
+                          SizedBox(width: 8),
+                          Expanded(child: Text('ADVISOR', style: TextStyle(fontSize: 9,
+                            fontWeight: FontWeight.w900, color: Color(0xFF94A3B8), letterSpacing: 1))),
+                          SizedBox(width: 90, child: Text('NET SALES', textAlign: TextAlign.right,
+                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
+                              color: Color(0xFF94A3B8), letterSpacing: 1))),
+                          SizedBox(width: 50, child: Text('ACH %', textAlign: TextAlign.right,
+                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
+                              color: Color(0xFF94A3B8), letterSpacing: 1))),
+                          SizedBox(width: 60, child: Text('VS PREV', textAlign: TextAlign.right,
+                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
+                              color: Color(0xFF94A3B8), letterSpacing: 1))),
                         ]),
-                      );
-                    }).toList(),
+                      ),
+                      const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                      ..._leaderboard.take(10).toList().asMap().entries.map((e) {
+                        final rank = e.key + 1;
+                        final item = e.value;
+                        final medal = rank == 1 ? '🥇' : rank == 2 ? '🥈' : rank == 3 ? '🥉' : '';
+                        final ach = (item['ach'] as double?) ?? 0;
+                        final growth = (item['growth'] as double?) ?? 0;
+                        final isGreen = growth >= 0;
+
+                        return Column(children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                            child: Row(children: [
+                              SizedBox(width: 26, child: Text(
+                                medal.isNotEmpty ? medal : '$rank',
+                                style: TextStyle(
+                                  fontSize: medal.isNotEmpty ? 16 : 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF64748B)),
+                                textAlign: TextAlign.center)),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text(item['name'] as String,
+                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                                overflow: TextOverflow.ellipsis)),
+                              SizedBox(width: 90, child: Text(
+                                _fmtCurrency(item['net'] as double),
+                                textAlign: TextAlign.right,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12,
+                                  fontFamily: 'monospace'))),
+                              SizedBox(width: 50, child: Text(
+                                ach > 0 ? '${ach.toStringAsFixed(1)}%' : '—',
+                                textAlign: TextAlign.right,
+                                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12,
+                                  color: ach >= 100 ? const Color(0xFF16A34A) : const Color(0xFF64748B)))),
+                              SizedBox(width: 60, child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: isGreen ? const Color(0xFFF0FDF4) : const Color(0xFFFEF2F2),
+                                  borderRadius: BorderRadius.circular(8)),
+                                child: Text(
+                                  '${isGreen ? '▲' : '▼'} ${growth.abs().toStringAsFixed(0)}%',
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 10,
+                                    color: isGreen ? const Color(0xFF16A34A) : const Color(0xFFDC2626))),
+                              )),
+                            ]),
+                          ),
+                          const Divider(height: 1, color: Color(0xFFF8FAFC)),
+                        ]);
+                      }),
+                    ],
                   )),
                   const SizedBox(height: 16),
                 ],

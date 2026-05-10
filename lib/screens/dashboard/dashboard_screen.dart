@@ -31,6 +31,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _txCount = 0;
   int _prospectCount = 0, _followUpCount = 0;
   List<double> _monthly = List.filled(12, 0);
+  List<Map<String, dynamic>> _storeComparison = [];
 
   static const _mNamesFull = ['January','February','March','April','May','June',
     'July','August','September','October','November','December'];
@@ -41,7 +42,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void didUpdateWidget(covariant DashboardScreen old) {
     super.didUpdateWidget(old);
-    if (old.month != widget.month || old.year != widget.year) _load();
+    if (old.month != widget.month || old.year != widget.year || old.advisor.store != widget.advisor.store) _load();
   }
 
   Future<void> _load() async {
@@ -66,6 +67,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final chart = await SalesService.getMonthlyChart(advisorName: adv.name, isManager: adv.isManager, store: adv.store, year: y);
     final counts = await TrafficService.getProspectCounts(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: m, year: y);
 
+    // Load store comparison if OpsManager viewing All Stores
+    List<Map<String, dynamic>> storeComp = [];
+    if (adv.isOpsManager && adv.store == 'All Stores') {
+      storeComp = await SalesService.getStoreComparison(month: m, year: y);
+    }
+
     setState(() {
       _mtd        = results[0];
       _target     = results[1];
@@ -74,6 +81,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _monthly    = chart;
       _prospectCount  = counts.total;
       _followUpCount  = counts.followUp;
+      _storeComparison = storeComp;
       _loading    = false;
     });
   }
@@ -120,7 +128,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Row(children: [
                         Text(
-                          adv.isManager ? 'STORE PERFORMANCE (MTD)' : 'MY PERFORMANCE (MTD)',
+                          adv.isOpsManager && adv.store == 'All Stores'
+                            ? 'REGIONAL PERFORMANCE (MTD)'
+                            : adv.isManager ? 'STORE PERFORMANCE (MTD)' : 'MY PERFORMANCE (MTD)',
                           style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800,
                             color: AppTheme.primary, letterSpacing: 1.5),
                         ),
@@ -208,6 +218,91 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   _StatCard('$_followUpCount',   'FOLLOW UP',  const Color(0xFFD97706), Icons.phone_forwarded_outlined),
                 ]),
                 const SizedBox(height: 14),
+
+                // ── STORE COMPARISON (Ops Manager only) ──
+                if (adv.isOpsManager && _storeComparison.isNotEmpty) ...[
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)],
+                    ),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Row(children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF5F3FF),
+                            borderRadius: BorderRadius.circular(8)),
+                          child: const Icon(Icons.store_rounded, size: 16, color: Color(0xFF7C3AED)),
+                        ),
+                        const SizedBox(width: 10),
+                        const Text('STORE RANKING', style: TextStyle(
+                          fontSize: 10, fontWeight: FontWeight.w900,
+                          color: Color(0xFF94A3B8), letterSpacing: 1)),
+                      ]),
+                      const SizedBox(height: 14),
+                      ..._storeComparison.asMap().entries.map((e) {
+                        final idx = e.key;
+                        final s = e.value;
+                        final sales = s['sales'] as double;
+                        final target = s['target'] as double;
+                        final ach = s['ach'] as double;
+                        final g = s['growth'] as double;
+                        final isUp = g >= 0;
+                        final medal = idx == 0 ? '🥇' : idx == 1 ? '🥈' : '🥉';
+                        final maxSales = _storeComparison.isNotEmpty
+                            ? (_storeComparison[0]['sales'] as double)
+                            : 1.0;
+                        final barPct = maxSales > 0 ? (sales / maxSales) : 0.0;
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 14),
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Row(children: [
+                              Text(medal, style: const TextStyle(fontSize: 16)),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text(s['label'] as String,
+                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700))),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: isUp ? const Color(0xFFF0FDF4) : const Color(0xFFFEF2F2),
+                                  borderRadius: BorderRadius.circular(8)),
+                                child: Text(
+                                  '${isUp ? '▲' : '▼'} ${g.abs().toStringAsFixed(0)}%',
+                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
+                                    color: isUp ? const Color(0xFF16A34A) : const Color(0xFFDC2626))),
+                              ),
+                            ]),
+                            const SizedBox(height: 6),
+                            Row(children: [
+                              Expanded(child: ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: LinearProgressIndicator(
+                                  value: barPct.clamp(0.0, 1.0), minHeight: 8,
+                                  backgroundColor: const Color(0xFFE2E8F0),
+                                  valueColor: AlwaysStoppedAnimation(
+                                    ach >= 100 ? const Color(0xFF16A34A) : const Color(0xFF7C3AED)),
+                                ),
+                              )),
+                              const SizedBox(width: 10),
+                              Text('${ach.toStringAsFixed(1)}%',
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800,
+                                  color: ach >= 100 ? const Color(0xFF16A34A) : const Color(0xFF64748B))),
+                            ]),
+                            const SizedBox(height: 4),
+                            Text('IDR ${_fmt(sales)} / ${_fmt(target)}',
+                              style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+                          ]),
+                        );
+                      }),
+                    ]),
+                  ),
+                  const SizedBox(height: 14),
+                ],
 
                 // ── QUICK ACTIONS ──
                 Row(children: [

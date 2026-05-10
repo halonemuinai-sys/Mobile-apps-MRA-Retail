@@ -52,7 +52,9 @@ class ProfileService {
     var query = _sb.from('crm_profiling').select('id');
 
     if (isManager) {
-      query = query.ilike('lokasi_store', '%${store.split(' ').last}%');
+      if (store != 'All Stores') {
+        query = query.ilike('lokasi_store', '%${store.split(' ').last}%');
+      }
     } else {
       query = query.eq('customer_advisor', advisorName);
     }

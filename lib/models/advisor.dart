@@ -11,8 +11,13 @@ class Advisor {
     required this.store,
   });
 
-  bool get isManager =>
-      role == 'store_manager' || role == 'asm' || role == 'spv';
+  bool get isManager {
+    final r = role.toLowerCase();
+    return r.contains('manager') || r.contains('supervisor') || r.contains('spv') || r == 'asm';
+  }
+
+  /// Operations Manager can view ALL stores
+  bool get isOpsManager => role.toLowerCase().contains('operation');
 
   factory Advisor.fromPin(Map<String, dynamic> pin, {String homeLocation = ''}) {
     return Advisor(

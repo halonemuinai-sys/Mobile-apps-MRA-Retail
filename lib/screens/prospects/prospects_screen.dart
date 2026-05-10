@@ -29,7 +29,7 @@ class _ProspectsScreenState extends State<ProspectsScreen> {
   @override
   void didUpdateWidget(covariant ProspectsScreen old) {
     super.didUpdateWidget(old);
-    if (old.month != widget.month || old.year != widget.year) _load();
+    if (old.month != widget.month || old.year != widget.year || old.advisor.store != widget.advisor.store) _load();
   }
 
   Future<void> _load() async {
