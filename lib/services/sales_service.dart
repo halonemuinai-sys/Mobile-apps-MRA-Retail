@@ -366,20 +366,29 @@ class SalesService {
     return result;
   }
 
-  // All transactions for an advisor (recent 50)
+  // All transactions for an advisor or store (manager)
   static Future<List<Transaction>> getRecentTransactions({
     required String advisorName,
     required int month,
     required int year,
+    bool isManager = false,
+    String store = '',
   }) async {
     final (from, to) = _monthRange(month, year);
-    final res = await _sb
+    var q = _sb
         .from('clean_master')
         .select()
-        .eq('salesman', advisorName)
         .gte('transaction_date', from)
         .lte('transaction_date', to)
-        .order('transaction_date', ascending: false);
+        .not('location', 'ilike', '%head office%');
+    if (isManager) {
+      if (!_isAllStores(store)) {
+        q = q.ilike('location', '%${store.split(' ').last}%');
+      }
+    } else {
+      q = q.eq('salesman', advisorName);
+    }
+    final res = await q.order('transaction_date', ascending: false);
     return (res as List).map((r) => Transaction.fromMap(r)).toList();
   }
 

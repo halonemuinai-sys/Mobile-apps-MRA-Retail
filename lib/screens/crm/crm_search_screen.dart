@@ -25,9 +25,9 @@ class _CrmSearchScreenState extends State<CrmSearchScreen> {
     setState(() { _loading = true; _searched = true; });
     try {
       final data = await ProfileService.search(
-        q, 
-        store: widget.advisor.store, // Tetap filter per store
-        advisor: widget.advisor.isManager ? '' : widget.advisor.name, // Filter per advisor jika bukan manager
+        q,
+        store: widget.advisor.store == 'All Stores' ? '' : widget.advisor.store,
+        advisor: (widget.advisor.isManager || widget.advisor.isOpsManager) ? '' : widget.advisor.name,
       );
       setState(() { _results = data; });
     } catch (e) {

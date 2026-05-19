@@ -19,6 +19,9 @@ class Advisor {
   /// Operations Manager can view ALL stores
   bool get isOpsManager => role.toLowerCase().contains('operation');
 
+  /// Only manager-level and above can view transaction detail list
+  bool get canViewTransactions => isManager || isOpsManager;
+
   factory Advisor.fromPin(Map<String, dynamic> pin, {String homeLocation = ''}) {
     return Advisor(
       name: pin['advisor_name'] as String,

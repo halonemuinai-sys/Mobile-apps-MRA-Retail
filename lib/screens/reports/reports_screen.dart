@@ -16,7 +16,7 @@ class ReportsScreen extends StatefulWidget {
   State<ReportsScreen> createState() => _ReportsScreenState();
 }
 
-class _ReportsScreenState extends State<ReportsScreen> {
+class _ReportsScreenState extends State<ReportsScreen> with WidgetsBindingObserver {
   bool _loading = true;
   Map<String, Map<String, dynamic>> _categories = {};
   List<Map<String, dynamic>> _leaderboard = [];
@@ -28,7 +28,22 @@ class _ReportsScreenState extends State<ReportsScreen> {
     'July','August','September','October','November','December'];
 
   @override
-  void initState() { super.initState(); _load(); }
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _load();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _load();
+  }
 
   @override
   void didUpdateWidget(covariant ReportsScreen old) {

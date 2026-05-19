@@ -47,6 +47,8 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
         advisorName: widget.advisor.name,
         month: widget.month,
         year: widget.year,
+        isManager: widget.advisor.isManager || widget.advisor.isOpsManager,
+        store: widget.advisor.store,
       );
       setState(() {
         _transactions = res;
@@ -151,6 +153,35 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!widget.advisor.canViewTransactions) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF8FAFC),
+        appBar: AppBar(
+          title: const Text('Detail Transaksi', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          backgroundColor: Colors.white,
+          foregroundColor: AppTheme.dark,
+          elevation: 0,
+        ),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.lock_outline_rounded, size: 64, color: Color(0xFFCBD5E1)),
+                SizedBox(height: 16),
+                Text('Akses Dibatasi', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
+                SizedBox(height: 8),
+                Text('Detail transaksi hanya dapat diakses oleh Advisor.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14, color: Color(0xFF94A3B8))),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(

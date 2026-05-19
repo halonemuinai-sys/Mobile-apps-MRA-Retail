@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../models/advisor.dart';
 import '../../services/sales_service.dart';
 import '../../services/traffic_service.dart';
@@ -22,7 +23,7 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingObserver {
   static const kDark = AppTheme.dark;
   static const kBlue = AppTheme.primary;
 
@@ -37,7 +38,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
     'July','August','September','October','November','December'];
 
   @override
-  void initState() { super.initState(); _load(); }
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _load();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _load();
+  }
 
   @override
   void didUpdateWidget(covariant DashboardScreen old) {
@@ -87,9 +103,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   String _fmt(double v) {
-    if (v >= 1e9) return '${(v / 1e9).toStringAsFixed(1)}B';
-    if (v >= 1e6) return '${(v / 1e6).toStringAsFixed(0)}M';
-    return v.toStringAsFixed(0);
+    return NumberFormat('#,###', 'id_ID').format(v.toInt());
   }
 
   @override
@@ -325,27 +339,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       onTap: widget.onNavLaporan,
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _QuickAction(
-                      icon: Icons.receipt_long_outlined,
-                      iconColor: const Color(0xFFEA580C),
-                      iconBg: const Color(0xFFFFF7ED),
-                      label: 'Transaksi',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => TransactionListScreen(
-                              advisor: widget.advisor,
-                              month: widget.month,
-                              year: widget.year,
+                  if (widget.advisor.canViewTransactions) ...[
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _QuickAction(
+                        icon: Icons.receipt_long_outlined,
+                        iconColor: const Color(0xFFEA580C),
+                        iconBg: const Color(0xFFFFF7ED),
+                        label: 'Transaksi',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => TransactionListScreen(
+                                advisor: widget.advisor,
+                                month: widget.month,
+                                year: widget.year,
+                              ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     ),
-                  ),
+                  ],
                 ]),
                 const SizedBox(height: 14),
 
@@ -442,9 +458,7 @@ class _MonthlyChartState extends State<_MonthlyChart> {
   }
 
   String _fmtTooltip(double v) {
-    if (v >= 1e9) return '${(v / 1e9).toStringAsFixed(2)}B';
-    if (v >= 1e6) return '${(v / 1e6).toStringAsFixed(1)}M';
-    return v.toStringAsFixed(0);
+    return NumberFormat('#,###', 'id_ID').format(v.toInt());
   }
 
   @override
