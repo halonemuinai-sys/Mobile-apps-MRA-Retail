@@ -4,9 +4,11 @@ import '../../models/advisor.dart';
 import '../../models/traffic.dart';
 import '../../services/traffic_service.dart';
 import 'traffic_input_screen.dart';
+import 'prospect_detail_sheet.dart';
 import '../../theme.dart';
 import '../../widgets/fade_in_slide.dart';
 import '../../widgets/hover_card.dart';
+
 
 class ProspectsScreen extends StatefulWidget {
   final Advisor advisor;
@@ -127,56 +129,70 @@ class _ProspectsScreenState extends State<ProspectsScreen> {
                             return FadeInSlide(
                               delay: Duration(milliseconds: (i * 60).clamp(0, 300)),
                               duration: const Duration(milliseconds: 350),
-                              child: Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: HoverCard(
-                                  borderRadius: 20,
-                                  padding: const EdgeInsets.all(14),
-                                  child: Row(children: [
-                                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                      Text(r.status.isEmpty ? '—' : r.status.toUpperCase(),
-                                        style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800,
-                                          color: sc, letterSpacing: 1)),
-                                      const SizedBox(height: 2),
-                                      Text(r.customerName.isEmpty ? '—' : r.customerName,
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14,
-                                          color: Color(0xFF1E293B))),
-                                      const SizedBox(height: 2),
-                                      Text(_fmtDate(r.tanggalBerkunjung),
-                                        style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
-                                      if (widget.advisor.isManager && r.customerAdvisor.isNotEmpty)
-                                        Text('CA: ${r.customerAdvisor}',
-                                          style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
-                                    ])),
-                                    Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                                      if (r.prospectItem.isNotEmpty)
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                          decoration: BoxDecoration(
-                                            color: pc.withValues(alpha: 0.1),
-                                            borderRadius: BorderRadius.circular(6),
-                                          ),
-                                          child: Text(r.prospectItem,
-                                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: pc)),
+                                child: Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      showModalBottomSheet(
+                                        context: context,
+                                        isScrollControlled: true,
+                                        backgroundColor: Colors.transparent,
+                                        builder: (_) => ProspectDetailSheet(
+                                          prospect: r,
+                                          statusColor: sc,
+                                          levelColor: pc,
                                         ),
-                                      const SizedBox(height: 8),
-                                      if (r.noHp.isNotEmpty)
-                                        GestureDetector(
-                                          onTap: () => _openWa(r.noHp, r.customerName),
-                                          child: Container(
-                                            padding: const EdgeInsets.all(8),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFFDCFCE7),
-                                              borderRadius: BorderRadius.circular(10),
+                                      );
+                                    },
+                                    child: HoverCard(
+                                      borderRadius: 20,
+                                      padding: const EdgeInsets.all(14),
+                                      child: Row(children: [
+                                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                          Text(r.status.isEmpty ? '—' : r.status.toUpperCase(),
+                                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800,
+                                              color: sc, letterSpacing: 1)),
+                                          const SizedBox(height: 2),
+                                          Text(r.customerName.isEmpty ? '—' : r.customerName,
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14,
+                                              color: Color(0xFF1E293B))),
+                                          const SizedBox(height: 2),
+                                          Text(_fmtDate(r.tanggalBerkunjung),
+                                            style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+                                          if (widget.advisor.isManager && r.customerAdvisor.isNotEmpty)
+                                            Text('CA: ${r.customerAdvisor}',
+                                              style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+                                        ])),
+                                        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                                          if (r.prospectItem.isNotEmpty)
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                              decoration: BoxDecoration(
+                                                color: pc.withValues(alpha: 0.1),
+                                                borderRadius: BorderRadius.circular(6),
+                                              ),
+                                              child: Text(r.prospectItem,
+                                                style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: pc)),
                                             ),
-                                            child: const Icon(Icons.chat_bubble_outline,
-                                              size: 18, color: Color(0xFF16A34A)),
-                                          ),
-                                        ),
-                                    ]),
-                                  ]),
+                                          const SizedBox(height: 8),
+                                          if (r.noHp.isNotEmpty)
+                                            GestureDetector(
+                                              onTap: () => _openWa(r.noHp, r.customerName),
+                                              child: Container(
+                                                padding: const EdgeInsets.all(8),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFFDCFCE7),
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                                child: const Icon(Icons.chat_bubble_outline,
+                                                  size: 18, color: Color(0xFF16A34A)),
+                                              ),
+                                            ),
+                                        ]),
+                                      ]),
+                                    ),
+                                  ),
                                 ),
-                              ),
                             );
                           },
                         ),
