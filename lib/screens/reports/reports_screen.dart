@@ -1,10 +1,13 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'customer_segment_screen.dart';
 import '../../models/advisor.dart';
 import '../../services/sales_service.dart';
 import '../../services/profile_service.dart';
 import '../../services/traffic_service.dart';
 import '../../theme.dart';
+import '../../widgets/fade_in_slide.dart';
+import '../../widgets/hover_card.dart';
 
 class ReportsScreen extends StatefulWidget {
   final Advisor advisor;
@@ -114,228 +117,353 @@ class _ReportsScreenState extends State<ReportsScreen> with WidgetsBindingObserv
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
               children: [
-                // ── LEADERBOARD (manager only) ──
-                if (adv.isManager && _leaderboard.isNotEmpty) ...[
-                  _SectionLabel('📊 STAFF LEADERBOARD'),
-                  const SizedBox(height: 8),
-                  _Card(child: Column(
-                    children: [
-                      // Table header
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(4, 4, 4, 10),
-                        child: Row(children: const [
-                          SizedBox(width: 26, child: Text('#', style: TextStyle(fontSize: 9,
-                            fontWeight: FontWeight.w900, color: Color(0xFF94A3B8), letterSpacing: 1))),
-                          SizedBox(width: 8),
-                          Expanded(child: Text('ADVISOR', style: TextStyle(fontSize: 9,
-                            fontWeight: FontWeight.w900, color: Color(0xFF94A3B8), letterSpacing: 1))),
-                          SizedBox(width: 90, child: Text('NET SALES', textAlign: TextAlign.right,
-                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
-                              color: Color(0xFF94A3B8), letterSpacing: 1))),
-                          SizedBox(width: 50, child: Text('ACH %', textAlign: TextAlign.right,
-                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
-                              color: Color(0xFF94A3B8), letterSpacing: 1))),
-                          SizedBox(width: 60, child: Text('VS PREV', textAlign: TextAlign.right,
-                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
-                              color: Color(0xFF94A3B8), letterSpacing: 1))),
-                        ]),
+                // ── CUSTOMER SEGMENTATION BANNER ──
+                FadeInSlide(
+                  delay: const Duration(milliseconds: 0),
+                  duration: const Duration(milliseconds: 400),
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: GestureDetector(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const CustomerSegmentScreen()),
                       ),
-                      const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                      ..._leaderboard.take(10).toList().asMap().entries.map((e) {
-                        final rank = e.key + 1;
-                        final item = e.value;
-                        final medal = rank == 1 ? '🥇' : rank == 2 ? '🥈' : rank == 3 ? '🥉' : '';
-                        final ach = (item['ach'] as double?) ?? 0;
-                        final growth = (item['growth'] as double?) ?? 0;
-                        final isGreen = growth >= 0;
-
-                        return Column(children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-                            child: Row(children: [
-                              SizedBox(width: 26, child: Text(
-                                medal.isNotEmpty ? medal : '$rank',
-                                style: TextStyle(
-                                  fontSize: medal.isNotEmpty ? 16 : 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF64748B)),
-                                textAlign: TextAlign.center)),
-                              const SizedBox(width: 8),
-                              Expanded(child: Text(item['name'] as String,
-                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                                overflow: TextOverflow.ellipsis)),
-                              SizedBox(width: 90, child: Text(
-                                _fmtCurrency(item['net'] as double),
-                                textAlign: TextAlign.right,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12,
-                                  fontFamily: 'monospace'))),
-                              SizedBox(width: 50, child: Text(
-                                ach > 0 ? '${ach.toStringAsFixed(1)}%' : '—',
-                                textAlign: TextAlign.right,
-                                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12,
-                                  color: ach >= 100 ? const Color(0xFF16A34A) : const Color(0xFF64748B)))),
-                              SizedBox(width: 60, child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: isGreen ? const Color(0xFFF0FDF4) : const Color(0xFFFEF2F2),
-                                  borderRadius: BorderRadius.circular(8)),
-                                child: Text(
-                                  '${isGreen ? '▲' : '▼'} ${growth.abs().toStringAsFixed(0)}%',
-                                  textAlign: TextAlign.right,
-                                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 10,
-                                    color: isGreen ? const Color(0xFF16A34A) : const Color(0xFFDC2626))),
-                              )),
-                            ]),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                          const Divider(height: 1, color: Color(0xFFF8FAFC)),
-                        ]);
-                      }),
-                    ],
-                  )),
-                  const SizedBox(height: 16),
-                ],
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.15),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.supervised_user_circle_outlined,
+                                color: Color(0xFFD4AF37),
+                                size: 28,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: const [
+                                  Text(
+                                    'Customer Intel & Segment',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'Analisis RFM, LTV, & Segmentasi loyalitas',
+                                    style: TextStyle(
+                                      color: Color(0xFF94A3B8),
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              color: Color(0xFF94A3B8),
+                              size: 16,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // ── LEADERBOARD (manager only) ──
+                if (adv.isManager && _leaderboard.isNotEmpty)
+                  FadeInSlide(
+                    delay: const Duration(milliseconds: 0),
+                    duration: const Duration(milliseconds: 400),
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const _SectionLabel('📊 STAFF LEADERBOARD'),
+                          const SizedBox(height: 8),
+                          _Card(child: Column(
+                            children: [
+                              // Table header
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(4, 4, 4, 10),
+                                child: Row(children: const [
+                                  SizedBox(width: 26, child: Text('#', style: TextStyle(fontSize: 9,
+                                    fontWeight: FontWeight.w900, color: Color(0xFF94A3B8), letterSpacing: 1))),
+                                  SizedBox(width: 8),
+                                  Expanded(child: Text('ADVISOR', style: TextStyle(fontSize: 9,
+                                    fontWeight: FontWeight.w900, color: Color(0xFF94A3B8), letterSpacing: 1))),
+                                  SizedBox(width: 90, child: Text('NET SALES', textAlign: TextAlign.right,
+                                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
+                                      color: Color(0xFF94A3B8), letterSpacing: 1))),
+                                  SizedBox(width: 50, child: Text('ACH %', textAlign: TextAlign.right,
+                                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
+                                      color: Color(0xFF94A3B8), letterSpacing: 1))),
+                                  SizedBox(width: 60, child: Text('VS PREV', textAlign: TextAlign.right,
+                                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
+                                      color: Color(0xFF94A3B8), letterSpacing: 1))),
+                                ]),
+                              ),
+                              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                              ..._leaderboard.take(10).toList().asMap().entries.map((e) {
+                                final rank = e.key + 1;
+                                final item = e.value;
+                                final medal = rank == 1 ? '🥇' : rank == 2 ? '🥈' : rank == 3 ? '🥉' : '';
+                                final ach = (item['ach'] as double?) ?? 0;
+                                final growth = (item['growth'] as double?) ?? 0;
+                                final isGreen = growth >= 0;
+
+                                return Column(children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                                    child: Row(children: [
+                                      SizedBox(width: 26, child: Text(
+                                        medal.isNotEmpty ? medal : '$rank',
+                                        style: TextStyle(
+                                          fontSize: medal.isNotEmpty ? 16 : 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: const Color(0xFF64748B)),
+                                        textAlign: TextAlign.center)),
+                                      const SizedBox(width: 8),
+                                      Expanded(child: Text(item['name'] as String,
+                                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                                        overflow: TextOverflow.ellipsis)),
+                                      SizedBox(width: 90, child: Text(
+                                        _fmtCurrency(item['net'] as double),
+                                        textAlign: TextAlign.right,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12,
+                                          fontFamily: 'monospace'))),
+                                      SizedBox(width: 50, child: Text(
+                                        ach > 0 ? '${ach.toStringAsFixed(1)}%' : '—',
+                                        textAlign: TextAlign.right,
+                                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12,
+                                          color: ach >= 100 ? const Color(0xFF16A34A) : const Color(0xFF64748B)))),
+                                      SizedBox(width: 60, child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: isGreen ? const Color(0xFFF0FDF4) : const Color(0xFFFEF2F2),
+                                          borderRadius: BorderRadius.circular(8)),
+                                        child: Text(
+                                          '${isGreen ? '▲' : '▼'} ${growth.abs().toStringAsFixed(0)}%',
+                                          textAlign: TextAlign.right,
+                                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 10,
+                                            color: isGreen ? const Color(0xFF16A34A) : const Color(0xFFDC2626))),
+                                      )),
+                                    ]),
+                                  ),
+                                  const Divider(height: 1, color: Color(0xFFF8FAFC)),
+                                ]);
+                              }),
+                            ],
+                          )),
+                        ],
+                      ),
+                    ),
+                  ),
 
                 // ── CATEGORY BREAKDOWN ──
-                _SectionLabel('PENJUALAN PER MAIN CATEGORY (BULAN INI)'),
-                const SizedBox(height: 8),
-                _Card(child: Column(children: [
-                  // Header
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
-                    child: Row(children: const [
-                      Expanded(child: Text('KATEGORI', style: TextStyle(fontSize: 9,
-                        fontWeight: FontWeight.w900, color: Color(0xFF94A3B8), letterSpacing: 1))),
-                      SizedBox(width: 40, child: Text('QTY', textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
-                          color: Color(0xFF94A3B8), letterSpacing: 1))),
-                      SizedBox(width: 80, child: Text('NET SALES', textAlign: TextAlign.right,
-                        style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
-                          color: Color(0xFF94A3B8), letterSpacing: 1))),
-                    ]),
-                  ),
-                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                  ...sortedCats.map((e) {
-                    final pct = totalNet > 0 ? (e.value['net'] as double) / totalNet : 0.0;
-                    return Column(children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-                        child: Column(children: [
-                          Row(children: [
-                            Expanded(child: Text(e.key,
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
-                            SizedBox(width: 40, child: Text('${e.value['qty']}',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)))),
-                            SizedBox(width: 80, child: Text(_fmt(e.value['net'] as double),
-                              textAlign: TextAlign.right,
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold))),
-                          ]),
-                          const SizedBox(height: 5),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: pct, minHeight: 4,
-                              backgroundColor: const Color(0xFFE2E8F0),
-                              valueColor: const AlwaysStoppedAnimation(Color(0xFF2563EB))),
-                          ),
-                        ]),
-                      ),
-                      const Divider(height: 1, color: Color(0xFFF8FAFC)),
-                    ]);
-                  }),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-                    child: Row(children: [
-                      const Expanded(child: Text('TOTAL', style: TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w900))),
-                      SizedBox(width: 40, child: Text('$totalQty', textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900))),
-                      SizedBox(width: 80, child: Text(_fmt(totalNet), textAlign: TextAlign.right,
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900,
-                          color: Color(0xFF2563EB)))),
-                    ]),
-                  ),
-                ])),
-                const SizedBox(height: 16),
-
-                // ── TRAFFIC BREAKDOWN ──
-                if (_prospectCounts != null) ...[
-                  _SectionLabel('LAPORAN TRAFFIC CRM (BULAN INI)'),
-                  const SizedBox(height: 8),
-                  _Card(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                FadeInSlide(
+                  delay: const Duration(milliseconds: 100),
+                  duration: const Duration(milliseconds: 400),
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _TrafficRow('Walk-In / New', _prospectCounts!.walkIn),
-                        _TrafficRow('Follow Up', _prospectCounts!.followUp),
-                        _TrafficRow('Delivery & Showing', _prospectCounts!.delivery),
-                        _TrafficRow('Service & Repair', _prospectCounts!.service),
-                        _TrafficRow('Online Only', _prospectCounts!.online),
-                        const SizedBox(height: 12),
-                        const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                        const SizedBox(height: 12),
-                        _TrafficStatusRow('STATUS: POTENSIAL / BARU', _prospectCounts!.newProfile),
-                        _TrafficStatusRow('DATA PROFILING (SMI) / NEW', _newProfileCount),
-                        const SizedBox(height: 12),
-                        const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                        const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('TOTAL TRAFFIC', style: TextStyle(
-                              fontSize: 15, fontWeight: FontWeight.w900, color: Color(0xFF0F172A))),
-                            Text('${_prospectCounts!.total}', style: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF0F172A))),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        // Conversion Rate Card
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5FE),
-                            borderRadius: BorderRadius.circular(16),
+                        const _SectionLabel('PENJUALAN PER MAIN CATEGORY (BULAN INI)'),
+                        const SizedBox(height: 8),
+                        _Card(child: Column(children: [
+                          // Header
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
+                            child: Row(children: const [
+                              Expanded(child: Text('KATEGORI', style: TextStyle(fontSize: 9,
+                                fontWeight: FontWeight.w900, color: Color(0xFF94A3B8), letterSpacing: 1))),
+                              SizedBox(width: 40, child: Text('QTY', textAlign: TextAlign.center,
+                                style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
+                                  color: Color(0xFF94A3B8), letterSpacing: 1))),
+                              SizedBox(width: 80, child: Text('NET SALES', textAlign: TextAlign.right,
+                                style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
+                                  color: Color(0xFF94A3B8), letterSpacing: 1))),
+                            ]),
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text('CONVERSION RATE', style: TextStyle(
-                                    fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF4F46E5), letterSpacing: 0.5)),
-                                  const SizedBox(height: 4),
-                                  Text('$totalQty Trx / ${_prospectCounts!.total} Traffic', style: const TextStyle(
-                                    fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500)),
-                                ],
+                          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                          ...sortedCats.map((e) {
+                            final pct = totalNet > 0 ? (e.value['net'] as double) / totalNet : 0.0;
+                            return Column(children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                                child: Column(children: [
+                                  Row(children: [
+                                    Expanded(child: Text(e.key,
+                                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+                                    SizedBox(width: 40, child: Text('${e.value['qty']}',
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)))),
+                                    SizedBox(width: 80, child: Text(_fmt(e.value['net'] as double),
+                                      textAlign: TextAlign.right,
+                                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold))),
+                                  ]),
+                                  const SizedBox(height: 5),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: LinearProgressIndicator(
+                                      value: pct, minHeight: 4,
+                                      backgroundColor: const Color(0xFFE2E8F0),
+                                      valueColor: const AlwaysStoppedAnimation(Color(0xFF2563EB))),
+                                  ),
+                                ]),
                               ),
-                              Text(
-                                '${_prospectCounts!.total > 0 ? (totalQty / _prospectCounts!.total * 100).toStringAsFixed(1) : '0'}%',
-                                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFF4F46E5)),
-                              ),
-                            ],
+                              const Divider(height: 1, color: Color(0xFFF8FAFC)),
+                            ]);
+                          }),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                            child: Row(children: [
+                              const Expanded(child: Text('TOTAL', style: TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.w900))),
+                              SizedBox(width: 40, child: Text('$totalQty', textAlign: TextAlign.center,
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900))),
+                              SizedBox(width: 80, child: Text(_fmt(totalNet), textAlign: TextAlign.right,
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900,
+                                  color: Color(0xFF2563EB)))),
+                            ]),
                           ),
-                        ),
+                        ])),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                ],
+                ),
+
+                // ── TRAFFIC BREAKDOWN ──
+                if (_prospectCounts != null)
+                  FadeInSlide(
+                    delay: const Duration(milliseconds: 200),
+                    duration: const Duration(milliseconds: 400),
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const _SectionLabel('LAPORAN TRAFFIC CRM (BULAN INI)'),
+                          const SizedBox(height: 8),
+                          _Card(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _TrafficRow('Walk-In / New', _prospectCounts!.walkIn),
+                                _TrafficRow('Follow Up', _prospectCounts!.followUp),
+                                _TrafficRow('Delivery & Showing', _prospectCounts!.delivery),
+                                _TrafficRow('Service & Repair', _prospectCounts!.service),
+                                _TrafficRow('Online Only', _prospectCounts!.online),
+                                const SizedBox(height: 12),
+                                const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                                const SizedBox(height: 12),
+                                _TrafficStatusRow('STATUS: POTENSIAL / BARU', _prospectCounts!.newProfile),
+                                _TrafficStatusRow('DATA PROFILING (SMI) / NEW', _newProfileCount),
+                                const SizedBox(height: 12),
+                                const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                                const SizedBox(height: 12),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text('TOTAL TRAFFIC', style: TextStyle(
+                                      fontSize: 15, fontWeight: FontWeight.w900, color: Color(0xFF0F172A))),
+                                    Text('${_prospectCounts!.total}', style: const TextStyle(
+                                      fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF0F172A))),
+                                  ],
+                                ),
+                                const SizedBox(height: 24),
+                                // Conversion Rate Card
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF1F5FE),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Text('CONVERSION RATE', style: TextStyle(
+                                            fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF4F46E5), letterSpacing: 0.5)),
+                                          const SizedBox(height: 4),
+                                          Text('$totalQty Trx / ${_prospectCounts!.total} Traffic', style: const TextStyle(
+                                            fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500)),
+                                        ],
+                                      ),
+                                      Text(
+                                        '${_prospectCounts!.total > 0 ? (totalQty / _prospectCounts!.total * 100).toStringAsFixed(1) : '0'}%',
+                                        style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFF4F46E5)),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
 
                 // ── MONTHLY CHART ──
-                _MonthlyChart(monthly: _monthly, currentMonth: widget.month, year: widget.year),
-                const SizedBox(height: 16),
+                FadeInSlide(
+                  delay: const Duration(milliseconds: 300),
+                  duration: const Duration(milliseconds: 400),
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: _MonthlyChart(monthly: _monthly, currentMonth: widget.month, year: widget.year),
+                  ),
+                ),
 
                 // ── ANNUAL SUMMARY ──
-                _SectionLabel('RINGKASAN TAHUNAN'),
-                const SizedBox(height: 8),
-                _Card(child: Column(children: [
-                  _SummaryRow('YTD Total', 'IDR ${_fmt(ytd)}'),
-                  _SummaryRow('Bulan Terbaik',
-                    bestMonthIdx >= 0 ? '${_mNamesFull[bestMonthIdx]} (IDR ${_fmt(_monthly[bestMonthIdx])})' : '—'),
-                  _SummaryRow('Rata-rata Bulanan', 'IDR ${_fmt(avgMonthly)}', isLast: true),
-                ])),
+                FadeInSlide(
+                  delay: const Duration(milliseconds: 400),
+                  duration: const Duration(milliseconds: 400),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const _SectionLabel('RINGKASAN TAHUNAN'),
+                      const SizedBox(height: 8),
+                      _Card(child: Column(children: [
+                        _SummaryRow('YTD Total', 'IDR ${_fmt(ytd)}'),
+                        _SummaryRow('Bulan Terbaik',
+                          bestMonthIdx >= 0 ? '${_mNamesFull[bestMonthIdx]} (IDR ${_fmt(_monthly[bestMonthIdx])})' : '—'),
+                        _SummaryRow('Rata-rata Bulanan', 'IDR ${_fmt(avgMonthly)}', isLast: true),
+                      ])),
+                    ],
+                  ),
+                ),
               ],
             ),
           );
@@ -358,14 +486,9 @@ class _Card extends StatelessWidget {
   const _Card({required this.child, this.padding});
 
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(BuildContext context) => HoverCard(
+    borderRadius: 20,
     padding: padding ?? const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: const Color(0xFFE2E8F0)),
-      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)],
-    ),
     child: child,
   );
 }
@@ -457,12 +580,9 @@ class _MonthlyChartState extends State<_MonthlyChart> {
     final maxY    = maxVal > 0 ? ((maxVal / 1e6) * 1.3).ceilToDouble() : 100.0;
     final interval = (maxY / 4).ceilToDouble();
 
-    return Container(
+    return HoverCard(
+      borderRadius: 20,
       padding: const EdgeInsets.fromLTRB(12, 16, 16, 10),
-      decoration: BoxDecoration(
-        color: Colors.white, borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)]),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Padding(padding: const EdgeInsets.only(left: 4),
           child: Text('NET SALES PER BULAN (${widget.year})',

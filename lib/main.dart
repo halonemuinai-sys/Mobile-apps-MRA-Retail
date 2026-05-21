@@ -59,18 +59,47 @@ class _AppRootState extends State<AppRoot> {
 
   @override
   Widget build(BuildContext context) {
+    Widget activeScreen;
     if (_checking) {
-      return const Scaffold(
+      activeScreen = const Scaffold(
+        key: ValueKey('checking'),
         backgroundColor: Color(0xFFF8FAFC),
         body: Center(child: CircularProgressIndicator(color: Color(0xFF2563EB))),
       );
+    } else if (_advisor == null) {
+      activeScreen = LoginScreen(
+        key: const ValueKey('login'),
+        onLogin: (adv) => setState(() => _advisor = adv),
+      );
+    } else {
+      activeScreen = MainShell(
+        key: const ValueKey('shell'),
+        advisor: _advisor!,
+        onLogout: () => setState(() => _advisor = null),
+      );
     }
-    if (_advisor == null) {
-      return LoginScreen(onLogin: (adv) => setState(() => _advisor = adv));
-    }
-    return MainShell(advisor: _advisor!, onLogout: () => setState(() => _advisor = null));
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 600),
+      switchInCurve: Curves.easeInOutCubic,
+      switchOutCurve: Curves.easeInOutCubic,
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.0, 0.03),
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
+          ),
+        );
+      },
+      child: activeScreen,
+    );
   }
 }
+
 
 class MainShell extends StatefulWidget {
   final Advisor advisor;
@@ -136,7 +165,7 @@ class _MainShellState extends State<MainShell> {
             borderRadius: BorderRadius.circular(12)),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.asset('assets/logo.png', fit: BoxFit.contain))),
+            child: Image.asset('assets/logobvl.png', fit: BoxFit.contain))),
         const SizedBox(width: 12),
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('MPI Advisor', style: GoogleFonts.inter(

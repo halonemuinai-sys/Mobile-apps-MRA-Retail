@@ -5,6 +5,8 @@ import '../../models/traffic.dart';
 import '../../services/traffic_service.dart';
 import 'traffic_input_screen.dart';
 import '../../theme.dart';
+import '../../widgets/fade_in_slide.dart';
+import '../../widgets/hover_card.dart';
 
 class ProspectsScreen extends StatefulWidget {
   final Advisor advisor;
@@ -90,16 +92,19 @@ class _ProspectsScreenState extends State<ProspectsScreen> {
               onRefresh: _load,
               child: Column(children: [
                 // Stats row
-                Container(
-                  color: Colors.white,
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-                  child: Row(children: [
-                    _S('${_counts.total}',     'Total',    const Color(0xFF1E293B)),
-                    _S('${_counts.walkIn}',    'Walk-in',  const Color(0xFF2563EB)),
-                    _S('${_counts.followUp}',  'Follow Up',const Color(0xFF7C3AED)),
-                    _S('${_counts.delivery}',  'Delivery', const Color(0xFF0D9488)),
-                    _S('${_counts.newProfile}','Baru',     const Color(0xFF059669)),
-                  ]),
+                FadeInSlide(
+                  duration: const Duration(milliseconds: 400),
+                  child: Container(
+                    color: Colors.white,
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                    child: Row(children: [
+                      _S('${_counts.total}',     'Total',    const Color(0xFF1E293B)),
+                      _S('${_counts.walkIn}',    'Walk-in',  const Color(0xFF2563EB)),
+                      _S('${_counts.followUp}',  'Follow Up',const Color(0xFF7C3AED)),
+                      _S('${_counts.delivery}',  'Delivery', const Color(0xFF0D9488)),
+                      _S('${_counts.newProfile}','Baru',     const Color(0xFF059669)),
+                    ]),
+                  ),
                 ),
                 const Divider(height: 1, color: Color(0xFFE2E8F0)),
 
@@ -119,59 +124,58 @@ class _ProspectsScreenState extends State<ProspectsScreen> {
                             final r = _rows[i];
                             final sc = _statusColor(r.status);
                             final pc = _prospectColor(r.prospectItem);
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: const Color(0xFFE2E8F0)),
-                                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)],
-                              ),
+                            return FadeInSlide(
+                              delay: Duration(milliseconds: (i * 60).clamp(0, 300)),
+                              duration: const Duration(milliseconds: 350),
                               child: Padding(
-                                padding: const EdgeInsets.all(14),
-                                child: Row(children: [
-                                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                    Text(r.status.isEmpty ? '—' : r.status.toUpperCase(),
-                                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800,
-                                        color: sc, letterSpacing: 1)),
-                                    const SizedBox(height: 2),
-                                    Text(r.customerName.isEmpty ? '—' : r.customerName,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14,
-                                        color: Color(0xFF1E293B))),
-                                    const SizedBox(height: 2),
-                                    Text(_fmtDate(r.tanggalBerkunjung),
-                                      style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
-                                    if (widget.advisor.isManager && r.customerAdvisor.isNotEmpty)
-                                      Text('CA: ${r.customerAdvisor}',
-                                        style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
-                                  ])),
-                                  Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                                    if (r.prospectItem.isNotEmpty)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                        decoration: BoxDecoration(
-                                          color: pc.withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(6),
-                                        ),
-                                        child: Text(r.prospectItem,
-                                          style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: pc)),
-                                      ),
-                                    const SizedBox(height: 8),
-                                    if (r.noHp.isNotEmpty)
-                                      GestureDetector(
-                                        onTap: () => _openWa(r.noHp, r.customerName),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(8),
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: HoverCard(
+                                  borderRadius: 20,
+                                  padding: const EdgeInsets.all(14),
+                                  child: Row(children: [
+                                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                      Text(r.status.isEmpty ? '—' : r.status.toUpperCase(),
+                                        style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800,
+                                          color: sc, letterSpacing: 1)),
+                                      const SizedBox(height: 2),
+                                      Text(r.customerName.isEmpty ? '—' : r.customerName,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14,
+                                          color: Color(0xFF1E293B))),
+                                      const SizedBox(height: 2),
+                                      Text(_fmtDate(r.tanggalBerkunjung),
+                                        style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+                                      if (widget.advisor.isManager && r.customerAdvisor.isNotEmpty)
+                                        Text('CA: ${r.customerAdvisor}',
+                                          style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+                                    ])),
+                                    Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                                      if (r.prospectItem.isNotEmpty)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFFDCFCE7),
-                                            borderRadius: BorderRadius.circular(10),
+                                            color: pc.withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(6),
                                           ),
-                                          child: const Icon(Icons.chat_bubble_outline,
-                                            size: 18, color: Color(0xFF16A34A)),
+                                          child: Text(r.prospectItem,
+                                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: pc)),
                                         ),
-                                      ),
+                                      const SizedBox(height: 8),
+                                      if (r.noHp.isNotEmpty)
+                                        GestureDetector(
+                                          onTap: () => _openWa(r.noHp, r.customerName),
+                                          child: Container(
+                                            padding: const EdgeInsets.all(8),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFDCFCE7),
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
+                                            child: const Icon(Icons.chat_bubble_outline,
+                                              size: 18, color: Color(0xFF16A34A)),
+                                          ),
+                                        ),
+                                    ]),
                                   ]),
-                                ]),
+                                ),
                               ),
                             );
                           },

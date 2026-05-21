@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/advisor.dart';
 import '../../services/auth_service.dart';
+import '../../widgets/fade_in_slide.dart';
 
 class LoginScreen extends StatefulWidget {
   final void Function(Advisor advisor) onLogin;
@@ -120,24 +121,27 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   children: [
                     // Main Card
-                    Container(
-                      width: double.infinity,
-                      constraints: const BoxConstraints(maxWidth: 400),
-                      padding: const EdgeInsets.all(32),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(40),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 60,
-                            offset: const Offset(0, 20),
-                          )
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
+                    FadeInSlide(
+                      delay: const Duration(milliseconds: 100),
+                      slideOffset: 30,
+                      child: Container(
+                        width: double.infinity,
+                        constraints: const BoxConstraints(maxWidth: 400),
+                        padding: const EdgeInsets.all(32),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(40),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 60,
+                              offset: const Offset(0, 20),
+                            )
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
                           // Logo Section
                           SizedBox(
                             height: 100,
@@ -250,7 +254,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 48),
+                  ),
+                  const SizedBox(height: 48),
                     // Footer
                     Opacity(
                       opacity: 0.8,
