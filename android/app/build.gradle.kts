@@ -19,6 +19,21 @@ android {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
+    flavorDimensions += "version"
+
+    productFlavors {
+        create("production") {
+            dimension = "version"
+            applicationId = "com.mraretail.bvlgari_advisor"
+            resValue("string", "app_name", "Advisor MPI")
+        }
+        create("trial") {
+            dimension = "version"
+            applicationId = "com.mraretail.bvlgari_advisor.trial"
+            resValue("string", "app_name", "Advisor MPI Trial")
+        }
+    }
+
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.mraretail.bvlgari_advisor"
@@ -42,3 +57,4 @@ android {
 flutter {
     source = "../.."
 }
+
