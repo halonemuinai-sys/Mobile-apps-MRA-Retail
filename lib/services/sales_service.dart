@@ -159,9 +159,15 @@ class SalesService {
       q = q.eq('salesman', advisorName);
     }
     final res = await q;
-    final map = <String, Map<String, dynamic>>{};
+    final map = <String, Map<String, dynamic>>{
+      'Jewelry': {'net': 0.0, 'qty': 0},
+      'Watches': {'net': 0.0, 'qty': 0},
+      'Accessories': {'net': 0.0, 'qty': 0},
+      'Perfume': {'net': 0.0, 'qty': 0},
+      'Other': {'net': 0.0, 'qty': 0},
+    };
     for (final r in res as List) {
-      final cat = (r['main_category'] as String?) ?? 'Unknown';
+      final cat = (r['main_category'] as String?) ?? 'Other';
       map.putIfAbsent(cat, () => {'net': 0.0, 'qty': 0});
       map[cat]!['net'] = (map[cat]!['net'] as double) + ((r['net_sales'] as num?) ?? 0).toDouble();
       map[cat]!['qty'] = (map[cat]!['qty'] as int) + ((r['qty'] as num?) ?? 0).toInt();
