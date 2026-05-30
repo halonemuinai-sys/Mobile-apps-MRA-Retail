@@ -39,6 +39,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
   List<int> _monthlyQty = List.filled(12, 0);
   List<Map<String, dynamic>> _storeComparison = [];
   List<Map<String, dynamic>> _storeComparisonQty = [];
+  Map<String, Map<String, dynamic>> _categories = {};
 
   static const _mNamesFull = ['January','February','March','April','May','June',
     'July','August','September','October','November','December'];
@@ -108,6 +109,8 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
       (adv.isOpsManager && adv.store == 'All Stores')
           ? SalesService.getStoreComparisonQty(month: m, year: y)
           : Future.value(<Map<String, dynamic>>[]),
+      // 12: Category Breakdown
+      SalesService.getCategoryBreakdown(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: m, year: y),
     ]);
 
     setState(() {
@@ -128,6 +131,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
       
       _storeComparison = results[10] as List<Map<String, dynamic>>;
       _storeComparisonQty = results[11] as List<Map<String, dynamic>>;
+      _categories = results[12] as Map<String, Map<String, dynamic>>;
       
       _loading = false;
     });
@@ -473,6 +477,107 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                   ]),
                 ),
                 const SizedBox(height: 14),
+
+                // ── CATEGORY BREAKDOWN ──
+                if (_categories.isNotEmpty) ...[
+                  FadeInSlide(
+                    delay: const Duration(milliseconds: 350),
+                    child: HoverCard(
+                      padding: const EdgeInsets.all(16),
+                      borderRadius: 20,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEFF6FF),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(Icons.category_outlined, size: 16, color: AppTheme.primary),
+                              ),
+                              const SizedBox(width: 10),
+                              const Text(
+                                'KONTRIBUSI KATEGORI',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                  color: Color(0xFF94A3B8),
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          ...(() {
+                            final sortedCats = _categories.entries.toList()
+                              ..sort((a, b) {
+                                if (_showValue) {
+                                  return (b.value['net'] as double).compareTo(a.value['net'] as double);
+                                } else {
+                                  return (b.value['qty'] as int).compareTo(a.value['qty'] as int);
+                                }
+                              });
+                            final totalVal = sortedCats.fold<double>(0, (s, e) => s + (e.value['net'] as double));
+                            final totalQty = sortedCats.fold<int>(0, (s, e) => s + (e.value['qty'] as int));
+
+                            return sortedCats.map((e) {
+                              final catName = e.key;
+                              final val = e.value['net'] as double;
+                              final qty = e.value['qty'] as int;
+                              final pct = _showValue
+                                  ? (totalVal > 0 ? val / totalVal : 0.0)
+                                  : (totalQty > 0 ? qty / totalQty : 0.0);
+
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          catName,
+                                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                                        ),
+                                        Text(
+                                          _showValue
+                                              ? 'IDR ${_fmt(val)} ($qty pcs)'
+                                              : '$qty pcs',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF475569),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(4),
+                                      child: LinearProgressIndicator(
+                                        value: pct,
+                                        minHeight: 6,
+                                        backgroundColor: const Color(0xFFE2E8F0),
+                                        valueColor: AlwaysStoppedAnimation(
+                                          _showValue ? AppTheme.primary : AppTheme.secondary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            });
+                          })(),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                ],
   
                 // ── MONTHLY CHART ──
                 FadeInSlide(
