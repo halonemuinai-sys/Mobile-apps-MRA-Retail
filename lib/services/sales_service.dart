@@ -411,4 +411,197 @@ class SalesService {
       ..sort();
     return stores;
   }
+
+  // MTD QTY sales for an advisor (or whole store if isManager)
+  static Future<int> getMtdQtySales({
+    required String advisorName,
+    required bool isManager,
+    required String store,
+    required int month,
+    required int year,
+  }) async {
+    final (from, to) = _monthRange(month, year);
+    var q = _sb
+        .from('clean_master')
+        .select('qty')
+        .gte('transaction_date', from)
+        .lte('transaction_date', to)
+        .not('location', 'ilike', '%head office%');
+    if (isManager) {
+      if (!_isAllStores(store)) {
+        q = q.ilike('location', '%${store.split(' ').last}%');
+      }
+    } else {
+      q = q.eq('salesman', advisorName);
+    }
+    final res = await q;
+    return (res as List).fold<int>(0, (sum, r) => sum + ((r['qty'] as num?) ?? 0).toInt());
+  }
+
+  // QTY Target for advisor/store in month
+  static Future<int> getQtyTarget({
+    required String advisorName,
+    required bool isManager,
+    required String store,
+    required int month,
+    required int year,
+  }) async {
+    if (isManager) {
+      var q = _sb
+          .from('targets')
+          .select('target_qty')
+          .eq('month_number', month)
+          .eq('year', year);
+      if (!_isAllStores(store)) {
+        q = q.ilike('store_name', '%${store.split(' ').last}%');
+      }
+      final res = await q;
+      return (res as List).fold<int>(0, (s, r) => s + ((r['target_qty'] as num?) ?? 0).toInt());
+    } else {
+      // Individual advisors don't have QTY targets. Return 0.
+      return 0;
+    }
+  }
+
+  // Monthly QTY chart data — 12 months
+  static Future<List<int>> getMonthlyQtyChart({
+    required String advisorName,
+    required bool isManager,
+    required String store,
+    required int year,
+  }) async {
+    var q = _sb
+        .from('clean_master')
+        .select('transaction_date,qty')
+        .gte('transaction_date', '$year-01-01')
+        .lte('transaction_date', '$year-12-31')
+        .not('location', 'ilike', '%head office%');
+    if (isManager) {
+      if (!_isAllStores(store)) {
+        q = q.ilike('location', '%${store.split(' ').last}%');
+      }
+    } else {
+      q = q.eq('salesman', advisorName);
+    }
+    final res = await q;
+    final monthly = List<int>.filled(12, 0);
+    for (final r in res as List) {
+      final date = r['transaction_date'] as String?;
+      if (date == null) continue;
+      final m = int.tryParse(date.split('-')[1]) ?? 0;
+      if (m >= 1 && m <= 12) {
+        monthly[m - 1] += ((r['qty'] as num?) ?? 0).toInt();
+      }
+    }
+    return monthly;
+  }
+
+  // Store QTY comparison for comparison (Ops Manager)
+  static Future<List<Map<String, dynamic>>> getStoreComparisonQty({
+    required int month,
+    required int year,
+  }) async {
+    final (from, to) = _monthRange(month, year);
+
+    // Previous month
+    int pm = month - 1, py = year;
+    if (pm < 1) { pm = 12; py = year - 1; }
+    final (prevFrom, prevTo) = _monthRange(pm, py);
+
+    // Fetch all QTY for the month (excluding head office)
+    final salesRes = await _sb
+        .from('clean_master')
+        .select('location,qty')
+        .gte('transaction_date', from)
+        .lte('transaction_date', to)
+        .not('location', 'ilike', '%head office%');
+
+    // Group by store keyword
+    final storeKeys = ['Indonesia', 'Senayan', 'Bali'];
+    final storeLabels = {
+      'Indonesia': 'Plaza Indonesia',
+      'Senayan': 'Plaza Senayan',
+      'Bali': 'Bali',
+    };
+
+    final salesMap = <String, int>{};
+    for (final key in storeKeys) {
+      salesMap[key] = 0;
+    }
+    for (final r in salesRes as List) {
+      final loc = (r['location'] as String?) ?? '';
+      final qty = ((r['qty'] as num?) ?? 0).toInt();
+      for (final key in storeKeys) {
+        if (loc.toLowerCase().contains(key.toLowerCase())) {
+          salesMap[key] = (salesMap[key] ?? 0) + qty;
+          break;
+        }
+      }
+    }
+
+    // Previous month QTY
+    final prevRes = await _sb
+        .from('clean_master')
+        .select('location,qty')
+        .gte('transaction_date', prevFrom)
+        .lte('transaction_date', prevTo)
+        .not('location', 'ilike', '%head office%');
+
+    final prevSalesMap = <String, int>{};
+    for (final key in storeKeys) {
+      prevSalesMap[key] = 0;
+    }
+    for (final r in prevRes as List) {
+      final loc = (r['location'] as String?) ?? '';
+      final qty = ((r['qty'] as num?) ?? 0).toInt();
+      for (final key in storeKeys) {
+        if (loc.toLowerCase().contains(key.toLowerCase())) {
+          prevSalesMap[key] = (prevSalesMap[key] ?? 0) + qty;
+          break;
+        }
+      }
+    }
+
+    // Targets per store (QTY)
+    final targetRes = await _sb
+        .from('targets')
+        .select('store_name,target_qty')
+        .eq('month_number', month)
+        .eq('year', year);
+
+    final targetMap = <String, int>{};
+    for (final r in targetRes as List) {
+      final storeName = (r['store_name'] as String?) ?? '';
+      final val = ((r['target_qty'] as num?) ?? 0).toInt();
+      for (final key in storeKeys) {
+        if (storeName.toLowerCase().contains(key.toLowerCase())) {
+          targetMap[key] = (targetMap[key] ?? 0) + val;
+          break;
+        }
+      }
+    }
+
+    // Build result
+    final result = <Map<String, dynamic>>[];
+    for (final key in storeKeys) {
+      final sales = (salesMap[key] ?? 0).toDouble();
+      final target = (targetMap[key] ?? 0).toDouble();
+      final prev = (prevSalesMap[key] ?? 0).toDouble();
+      final ach = target > 0 ? (sales / target * 100) : 0.0;
+      final growth = prev > 0 ? ((sales - prev) / prev * 100) : (sales > 0 ? 100.0 : 0.0);
+
+      result.add({
+        'key': key,
+        'label': storeLabels[key] ?? key,
+        'sales': sales,
+        'target': target,
+        'ach': ach,
+        'prev': prev,
+        'growth': growth,
+      });
+    }
+
+    result.sort((a, b) => (b['sales'] as double).compareTo(a['sales'] as double));
+    return result;
+  }
 }

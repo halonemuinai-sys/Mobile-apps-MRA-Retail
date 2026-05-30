@@ -30,11 +30,15 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
   static const kBlue = AppTheme.primary;
 
   bool _loading = true;
+  bool _showValue = true; // Toggle: true for Value (IDR), false for QTY (Unit)
   double _mtd = 0, _target = 0, _prevMtd = 0;
+  int _mtdQty = 0, _targetQty = 0, _prevMtdQty = 0;
   int _txCount = 0;
   int _prospectCount = 0, _followUpCount = 0;
   List<double> _monthly = List.filled(12, 0);
+  List<int> _monthlyQty = List.filled(12, 0);
   List<Map<String, dynamic>> _storeComparison = [];
+  List<Map<String, dynamic>> _storeComparisonQty = [];
 
   static const _mNamesFull = ['January','February','March','April','May','June',
     'July','August','September','October','November','December'];
@@ -74,33 +78,58 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     if (pm < 1) { pm = 12; py = y - 1; }
 
     final results = await Future.wait([
+      // 0: Value MTD Sales
       SalesService.getMtdNetSales(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: m, year: y),
+      // 1: Value Target
       SalesService.getTarget(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: m, year: y),
+      // 2: Value Prev MTD Sales
       SalesService.getMtdNetSales(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: pm, year: py),
-      SalesService.getMtdTransactionCount(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: m, year: y).then((v) => v.toDouble()),
-      SalesService.getMonthlyChart(advisorName: adv.name, isManager: adv.isManager, store: adv.store, year: y).then((_) => 0.0),
-      TrafficService.getProspectCounts(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: m, year: y).then((_) => 0.0),
+      // 3: Tx Count
+      SalesService.getMtdTransactionCount(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: m, year: y),
+      // 4: Value Monthly Chart
+      SalesService.getMonthlyChart(advisorName: adv.name, isManager: adv.isManager, store: adv.store, year: y),
+      // 5: Prospect Counts
+      TrafficService.getProspectCounts(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: m, year: y),
+      
+      // 6: QTY MTD Sales
+      SalesService.getMtdQtySales(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: m, year: y),
+      // 7: QTY Target
+      SalesService.getQtyTarget(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: m, year: y),
+      // 8: QTY Prev MTD Sales
+      SalesService.getMtdQtySales(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: pm, year: py),
+      // 9: QTY Monthly Chart
+      SalesService.getMonthlyQtyChart(advisorName: adv.name, isManager: adv.isManager, store: adv.store, year: y),
+
+      // 10: Store Comparison (Value)
+      (adv.isOpsManager && adv.store == 'All Stores')
+          ? SalesService.getStoreComparison(month: m, year: y)
+          : Future.value(<Map<String, dynamic>>[]),
+      // 11: Store Comparison (QTY)
+      (adv.isOpsManager && adv.store == 'All Stores')
+          ? SalesService.getStoreComparisonQty(month: m, year: y)
+          : Future.value(<Map<String, dynamic>>[]),
     ]);
 
-    final chart = await SalesService.getMonthlyChart(advisorName: adv.name, isManager: adv.isManager, store: adv.store, year: y);
-    final counts = await TrafficService.getProspectCounts(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: m, year: y);
-
-    // Load store comparison if OpsManager viewing All Stores
-    List<Map<String, dynamic>> storeComp = [];
-    if (adv.isOpsManager && adv.store == 'All Stores') {
-      storeComp = await SalesService.getStoreComparison(month: m, year: y);
-    }
-
     setState(() {
-      _mtd        = results[0];
-      _target     = results[1];
-      _prevMtd    = results[2];
-      _txCount    = results[3].toInt();
-      _monthly    = chart;
-      _prospectCount  = counts.total;
-      _followUpCount  = counts.followUp;
-      _storeComparison = storeComp;
-      _loading    = false;
+      _mtd = results[0] as double;
+      _target = results[1] as double;
+      _prevMtd = results[2] as double;
+      _txCount = results[3] as int;
+      _monthly = results[4] as List<double>;
+      
+      final counts = results[5] as ProspectCounts;
+      _prospectCount = counts.total;
+      _followUpCount = counts.followUp;
+
+      _mtdQty = results[6] as int;
+      _targetQty = results[7] as int;
+      _prevMtdQty = results[8] as int;
+      _monthlyQty = results[9] as List<int>;
+      
+      _storeComparison = results[10] as List<Map<String, dynamic>>;
+      _storeComparisonQty = results[11] as List<Map<String, dynamic>>;
+      
+      _loading = false;
     });
   }
 
@@ -111,10 +140,15 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
   @override
   Widget build(BuildContext context) {
     final adv = widget.advisor;
-    final ach = _target > 0 ? (_mtd / _target) : 0.0;
-    final achPct = (ach * 100).clamp(0.0, 999.0);
-    final growth = _prevMtd > 0 ? ((_mtd - _prevMtd) / _prevMtd * 100) : (_mtd > 0 ? 100.0 : 0.0);
-    final remaining = (_target - _mtd).clamp(0, double.infinity);
+    final currentMtd = _showValue ? _mtd : _mtdQty.toDouble();
+    final currentPrevMtd = _showValue ? _prevMtd : _prevMtdQty.toDouble();
+    final currentGrowth = currentPrevMtd > 0 ? ((currentMtd - currentPrevMtd) / currentPrevMtd * 100) : (currentMtd > 0 ? 100.0 : 0.0);
+
+    final currentTarget = _showValue ? _target : _targetQty.toDouble();
+    final hasTarget = currentTarget > 0;
+    final currentAch = currentTarget > 0 ? (currentMtd / currentTarget) : 0.0;
+    final currentAchPct = (currentAch * 100).clamp(0.0, 999.0);
+    final currentRemaining = (currentTarget - currentMtd).clamp(0.0, double.infinity);
 
     return _loading
         ? const Center(child: CircularProgressIndicator(color: kBlue))
@@ -123,6 +157,65 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
               children: [
+                // ── TOGGLE SELECTOR ──
+                FadeInSlide(
+                  delay: Duration.zero,
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _showValue = true),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: _showValue ? kDark : Colors.transparent,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                'VALUE (IDR)',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: _showValue ? Colors.white : const Color(0xFF64748B),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _showValue = false),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: !_showValue ? kDark : Colors.transparent,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                'VOLUME (QTY)',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: !_showValue ? Colors.white : const Color(0xFF64748B),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
                 // ── MY PERFORMANCE CARD ──
                 FadeInSlide(
                   delay: Duration.zero,
@@ -162,61 +255,70 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                         ]),
                         const SizedBox(height: 8),
                         Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                          Text('IDR ${_fmt(_mtd)}',
+                          Text(_showValue ? 'IDR ${_fmt(_mtd)}' : '$_mtdQty Pcs',
                             style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold,
                               color: kDark, letterSpacing: -0.5)),
                           const SizedBox(width: 8),
-                          const Padding(
-                            padding: EdgeInsets.only(bottom: 4),
-                            child: Text('Net Sales', style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8))),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Text(_showValue ? 'Net Sales' : 'Items Sold', style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8))),
                           ),
                         ]),
   
                         // Growth badge
-                        if (_prevMtd > 0 || _mtd > 0) ...[
+                        if (currentPrevMtd > 0 || currentMtd > 0) ...[
                           const SizedBox(height: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: growth >= 0 ? const Color(0xFFF0FDF4) : const Color(0xFFFEF2F2),
+                              color: currentGrowth >= 0 ? const Color(0xFFF0FDF4) : const Color(0xFFFEF2F2),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
-                              '${growth >= 0 ? '▲' : '▼'} ${growth.abs().toStringAsFixed(1)}% vs bulan lalu',
+                              '${currentGrowth >= 0 ? '▲' : '▼'} ${currentGrowth.abs().toStringAsFixed(1)}% vs bulan lalu',
                               style: TextStyle(
                                 fontSize: 11, fontWeight: FontWeight.bold,
-                                color: growth >= 0 ? const Color(0xFF16A34A) : const Color(0xFFDC2626)),
+                                color: currentGrowth >= 0 ? const Color(0xFF16A34A) : const Color(0xFFDC2626)),
                             ),
                           ),
                         ],
-                        const SizedBox(height: 16),
-  
-                        // Achievement bar
-                        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                          const Text('Target Achievement',
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
-                          Text('${achPct.toStringAsFixed(1)}%',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold,
-                              color: ach >= 1.0 ? const Color(0xFF16A34A) : kBlue)),
-                        ]),
-                        const SizedBox(height: 6),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(6),
-                          child: LinearProgressIndicator(
-                            value: ach.clamp(0.0, 1.0),
-                            minHeight: 10,
-                            backgroundColor: const Color(0xFFE2E8F0),
-                            valueColor: AlwaysStoppedAnimation(
-                              ach >= 1.0 ? const Color(0xFF16A34A) : kBlue),
+                        
+                        if (hasTarget) ...[
+                          const SizedBox(height: 16),
+                          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                            const Text('Target Achievement',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
+                            Text('${currentAchPct.toStringAsFixed(1)}%',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold,
+                                color: currentAch >= 1.0 ? const Color(0xFF16A34A) : kBlue)),
+                          ]),
+                          const SizedBox(height: 6),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: LinearProgressIndicator(
+                              value: currentAch.clamp(0.0, 1.0),
+                              minHeight: 10,
+                              backgroundColor: const Color(0xFFE2E8F0),
+                              valueColor: AlwaysStoppedAnimation(
+                                currentAch >= 1.0 ? const Color(0xFF16A34A) : kBlue),
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                          Text('Target: IDR ${_fmt(_target)}',
-                            style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
-                          Text('Sisa: IDR ${_fmt(remaining.toDouble())}',
-                            style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
-                        ]),
+                          const SizedBox(height: 8),
+                          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                            Text(_showValue ? 'Target: IDR ${_fmt(_target)}' : 'Target: ${currentTarget.toInt()} Pcs',
+                              style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+                            Text(_showValue ? 'Sisa: IDR ${_fmt(currentRemaining)}' : 'Sisa: ${currentRemaining.toInt()} Pcs',
+                              style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+                          ]),
+                        ] else if (!_showValue) ...[
+                          const SizedBox(height: 16),
+                          const Center(
+                            child: Text(
+                              'Target Kuantitas Toko saja (Akses Manager)',
+                              style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8), fontStyle: FontStyle.italic),
+                            ),
+                          ),
+                        ],
                       ]),
                     ]),
                   ),
@@ -237,7 +339,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                 const SizedBox(height: 14),
 
                 // ── STORE COMPARISON (Ops Manager only) ──
-                if (adv.isOpsManager && _storeComparison.isNotEmpty) ...[
+                if (adv.isOpsManager && (_showValue ? _storeComparison : _storeComparisonQty).isNotEmpty) ...[
                   FadeInSlide(
                     delay: const Duration(milliseconds: 200),
                     child: HoverCard(
@@ -258,7 +360,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                             color: Color(0xFF94A3B8), letterSpacing: 1)),
                         ]),
                         const SizedBox(height: 14),
-                        ..._storeComparison.asMap().entries.map((e) {
+                        ...(_showValue ? _storeComparison : _storeComparisonQty).asMap().entries.map((e) {
                           final idx = e.key;
                           final s = e.value;
                           final sales = s['sales'] as double;
@@ -267,8 +369,9 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                           final g = s['growth'] as double;
                           final isUp = g >= 0;
                           final medal = idx == 0 ? '🥇' : idx == 1 ? '🥈' : '🥉';
-                          final maxSales = _storeComparison.isNotEmpty
-                              ? (_storeComparison[0]['sales'] as double)
+                          final activeComp = _showValue ? _storeComparison : _storeComparisonQty;
+                          final maxSales = activeComp.isNotEmpty
+                              ? (activeComp[0]['sales'] as double)
                               : 1.0;
                           final barPct = maxSales > 0 ? (sales / maxSales) : 0.0;
   
@@ -308,7 +411,9 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                                     color: ach >= 100 ? const Color(0xFF16A34A) : const Color(0xFF64748B))),
                               ]),
                               const SizedBox(height: 4),
-                              Text('IDR ${_fmt(sales)} / ${_fmt(target)}',
+                              Text(_showValue 
+                                ? 'IDR ${_fmt(sales)} / IDR ${_fmt(target)}' 
+                                : (target > 0 ? '${sales.toInt()} Pcs / ${target.toInt()} Pcs' : '${sales.toInt()} Pcs'),
                                 style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
                             ]),
                           );
@@ -372,7 +477,12 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                 // ── MONTHLY CHART ──
                 FadeInSlide(
                   delay: const Duration(milliseconds: 400),
-                  child: _MonthlyChart(monthly: _monthly, currentMonth: widget.month, year: widget.year),
+                  child: _MonthlyChart(
+                    monthly: _showValue ? _monthly : _monthlyQty.map((v) => v.toDouble()).toList(),
+                    currentMonth: widget.month,
+                    year: widget.year,
+                    showValue: _showValue,
+                  ),
                 ),
               ],
             ),
@@ -435,7 +545,13 @@ class _MonthlyChart extends StatefulWidget {
   final List<double> monthly;
   final int currentMonth;
   final int year;
-  const _MonthlyChart({required this.monthly, required this.currentMonth, required this.year});
+  final bool showValue;
+  const _MonthlyChart({
+    required this.monthly,
+    required this.currentMonth,
+    required this.year,
+    required this.showValue,
+  });
 
   @override
   State<_MonthlyChart> createState() => _MonthlyChartState();
@@ -447,9 +563,13 @@ class _MonthlyChartState extends State<_MonthlyChart> {
   static const _mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
   String _fmtAxis(double m) {
-    if (m >= 1000) return '${(m / 1000).toStringAsFixed(0)}B';
-    if (m >= 1)    return '${m.toStringAsFixed(0)}M';
-    return '';
+    if (widget.showValue) {
+      if (m >= 1000) return '${(m / 1000).toStringAsFixed(0)}B';
+      if (m >= 1)    return '${m.toStringAsFixed(0)}M';
+      return '';
+    } else {
+      return m.toInt().toString();
+    }
   }
 
   String _fmtTooltip(double v) {
@@ -458,8 +578,9 @@ class _MonthlyChartState extends State<_MonthlyChart> {
 
   @override
   Widget build(BuildContext context) {
+    final divisor = widget.showValue ? 1e6 : 1.0;
     final maxVal = widget.monthly.fold(0.0, (a, b) => a > b ? a : b);
-    final maxY = maxVal > 0 ? ((maxVal / 1e6) * 1.3).ceilToDouble() : 100.0;
+    final maxY = maxVal > 0 ? ((maxVal / divisor) * 1.3).ceilToDouble() : 10.0;
     final interval = (maxY / 4).ceilToDouble();
 
     return Container(
@@ -473,7 +594,10 @@ class _MonthlyChartState extends State<_MonthlyChart> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Padding(
           padding: const EdgeInsets.only(left: 4),
-          child: Text('NET SALES PER BULAN (${widget.year})',
+          child: Text(
+            widget.showValue
+                ? 'NET SALES PER BULAN (${widget.year})'
+                : 'ITEMS SOLD PER BULAN (${widget.year})',
             style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800,
               color: Color(0xFF94A3B8), letterSpacing: 1)),
         ),
@@ -494,7 +618,9 @@ class _MonthlyChartState extends State<_MonthlyChart> {
                 tooltipRoundedRadius: 8,
                 tooltipPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 getTooltipItem: (group, _, rod, _) => BarTooltipItem(
-                  '${_mNames[group.x]}\nIDR ${_fmtTooltip(widget.monthly[group.x])}',
+                  widget.showValue
+                      ? '${_mNames[group.x]}\nIDR ${_fmtTooltip(widget.monthly[group.x])}'
+                      : '${_mNames[group.x]}\n${widget.monthly[group.x].toInt()} Pcs',
                   const TextStyle(color: Colors.white, fontSize: 11,
                     fontWeight: FontWeight.w600, height: 1.5),
                 ),
@@ -540,7 +666,7 @@ class _MonthlyChartState extends State<_MonthlyChart> {
               final touched  = i == _touchedIndex;
               return BarChartGroupData(x: i, barRods: [
                 BarChartRodData(
-                  toY: widget.monthly[i] / 1e6,
+                  toY: widget.monthly[i] / divisor,
                   width: touched ? 18 : 14,
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
                   color: active
