@@ -17,6 +17,8 @@ void main() async {
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
   ]);
   await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
   runApp(const TrialAdvisorApp());
