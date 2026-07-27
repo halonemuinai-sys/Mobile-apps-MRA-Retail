@@ -1,10 +1,19 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/transaction.dart';
 
 class SalesService {
   static final _sb = Supabase.instance.client;
+
+  static String get apiBaseUrl {
+    const customUrl = String.fromEnvironment('API_URL');
+    if (customUrl.isNotEmpty) return customUrl;
+    if (kIsWeb) return 'http://localhost:3000';
+    // Skenario A: Production Cloud Server Endpoint (Vercel / Cloud Domain)
+    return 'https://dashboard-bvl-next.vercel.app';
+  }
 
   static String _pad(int n) => n.toString().padLeft(2, '0');
 
@@ -683,7 +692,7 @@ class SalesService {
 
     try {
       final res = await http.post(
-        Uri.parse('http://localhost:3000/api/send-advisor-report'),
+        Uri.parse('$apiBaseUrl/api/send-advisor-report'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'month': monthName,
