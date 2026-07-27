@@ -137,6 +137,141 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     });
   }
 
+  Future<void> _sendExcelFromDashboard() async {
+    final monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    final mName = monthNames[widget.month - 1];
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.mark_email_read_outlined, color: Color(0xFF10B981)),
+              SizedBox(width: 10),
+              Text('Kirim Laporan Excel', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Pilih butik & tujuan email untuk periode $mName ${widget.year}:',
+                style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+              const SizedBox(height: 16),
+              _storeEmailOption('Plaza Indonesia', 'pi@mogems.co.id', Icons.location_city, const Color(0xFFB45309)),
+              const SizedBox(height: 8),
+              _storeEmailOption('Plaza Senayan', 'ps@mogems.co.id', Icons.location_city_outlined, const Color(0xFF047857)),
+              const SizedBox(height: 8),
+              _storeEmailOption('Bali', 'bali@mogems.co.id', Icons.beach_access_outlined, const Color(0xFF0369A1)),
+              const SizedBox(height: 8),
+              _storeEmailOption('Semua Lokasi (All Stores)', 'aris@mraretail.co.id', Icons.language, const Color(0xFF475569)),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal', style: TextStyle(color: Color(0xFF94A3B8))),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _storeEmailOption(String locationName, String emailTarget, IconData icon, Color color) {
+    return InkWell(
+      onTap: () {
+        Navigator.pop(context);
+        _executeSendEmail(locationName, emailTarget);
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(locationName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  Text(emailTarget, style: const TextStyle(fontSize: 10, color: Color(0xFF64748B))),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios, size: 12, color: Color(0xFFCBD5E1)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _executeSendEmail(String locationName, String emailTarget) async {
+    final monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    final mName = monthNames[widget.month - 1];
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+            const SizedBox(width: 12),
+            Expanded(child: Text('Mengirim Excel $locationName ke $emailTarget (CC: aris@mraretail.co.id, jessica@mogems.co.id)...')),
+          ],
+        ),
+        backgroundColor: const Color(0xFF0F172A),
+        duration: const Duration(seconds: 10),
+      ),
+    );
+
+    try {
+      final success = await SalesService.sendMonthlyExcelEmail(
+        month: widget.month,
+        year: widget.year,
+        location: locationName,
+        emailTo: emailTarget,
+        ccEmail: 'aris@mraretail.co.id, jessica@mogems.co.id',
+      );
+
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+      if (success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Sukses! Berkas Excel $locationName $mName ${widget.year} terkirim ke $emailTarget (CC: aris, jessica)'),
+              backgroundColor: const Color(0xFF16A34A),
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Gagal mengirim email. Pastikan server backend aktif.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   String _fmt(double v) {
     return NumberFormat('#,###', 'id_ID').format(v.toInt());
   }
@@ -452,7 +587,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                       ),
                     ),
                     if (widget.advisor.canViewTransactions) ...[
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: _QuickAction(
                           icon: Icons.receipt_long_outlined,
@@ -474,6 +609,16 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                         ),
                       ),
                     ],
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _QuickAction(
+                        icon: Icons.mark_email_read_outlined,
+                        iconColor: const Color(0xFF059669),
+                        iconBg: const Color(0xFFECFDF5),
+                        label: 'Kirim Excel',
+                        onTap: () => _sendExcelFromDashboard(),
+                      ),
+                    ),
                   ]),
                 ),
                 const SizedBox(height: 14),

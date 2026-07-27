@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/transaction.dart';
 
@@ -610,4 +612,94 @@ class SalesService {
     result.sort((a, b) => (b['sales'] as double).compareTo(a['sales'] as double));
     return result;
   }
+
+  // Fetch DP & Service Transactions from raw bvlgari_sales table
+  static Future<List<Transaction>> getDpsSvcTransactions({
+    required String advisorName,
+    required int month,
+    required int year,
+    bool isManager = false,
+    String store = '',
+  }) async {
+    final (from, to) = _monthRange(month, year);
+    var q = _sb
+        .from('bvlgari_sales')
+        .select()
+        .gte('transaction_date', from)
+        .lte('transaction_date', to)
+        .inFilter('collection', ['DPS', 'SVC'])
+        .not('location', 'ilike', '%head office%');
+        
+    if (isManager) {
+      if (!_isAllStores(store)) {
+        q = q.ilike('location', '%${store.split(' ').last}%');
+      }
+    } else {
+      q = q.eq('salesman', advisorName);
+    }
+    
+    final res = await q.order('transaction_date', ascending: false);
+    
+    return (res as List).map((r) {
+      final gross = (((r['qty'] as num?) ?? 1) * ((r['price'] as num?) ?? 0)).toDouble();
+      return Transaction(
+        id:              r['id'] ?? 0,
+        transNo:         (r['transaction_no'] as String?) ?? '',
+        transactionDate: (r['transaction_date'] as String?) ?? '',
+        customer:        (r['customer_name'] as String?) ?? '',
+        salesman:        (r['salesman'] as String?) ?? '',
+        location:        (r['location'] as String?) ?? '',
+        mainCategory:    (r['collection'] as String?) ?? '',
+        collection:      (r['collection'] as String?) ?? '',
+        netSales:        ((r['net_sales'] as num?) ?? 0).toDouble(),
+        grossSales:      gross,
+        valDisc:         ((r['sub_total_discount'] as num?) ?? 0).toDouble(),
+        comm:            ((r['card_comm'] as num?) ?? 0).toDouble(),
+        qty:             ((r['qty'] as num?) ?? 0).toInt(),
+        sapCode:         (r['sap_code'] as String?) ?? '',
+        catalogueCode:   (r['catalogue_code'] as String?) ?? '',
+      );
+    }).toList();
+  }
+
+  // Update commission (card_comm) for a DP/SVC transaction by transaction_no
+  static Future<void> updateDpsSvcCommission({required String transNo, required double value}) async {
+    await _sb
+        .from('bvlgari_sales')
+        .update({'card_comm': value})
+        .eq('transaction_no', transNo);
+  }
+
+  // Send Monthly Excel Report email to aris@mraretail.co.id via Next.js Backend API
+  static Future<bool> sendMonthlyExcelEmail({
+    required int month,
+    required int year,
+    String location = 'ALL',
+    String? emailTo,
+    String ccEmail = 'aris@mraretail.co.id, jessica@mogems.co.id',
+  }) async {
+    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    final monthName = monthNames[month - 1];
+
+    try {
+      final res = await http.post(
+        Uri.parse('http://localhost:3000/api/send-advisor-report'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'month': monthName,
+          'year': year,
+          'location': location,
+          'emailTo': emailTo,
+          'ccEmail': ccEmail,
+          'format': 'excel',
+        }),
+      );
+      print('Send Excel response: ${res.statusCode} ${res.body}');
+      return res.statusCode == 200;
+    } catch (e) {
+      print('Error sending email: $e');
+      return false;
+    }
+  }
 }
+

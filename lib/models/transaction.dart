@@ -1,5 +1,5 @@
 class Transaction {
-  final int id;
+  final dynamic id;
   final String transNo;
   final String transactionDate;
   final String customer;
@@ -35,8 +35,8 @@ class Transaction {
 
   factory Transaction.fromMap(Map<String, dynamic> m) {
     return Transaction(
-      id:              (m['id'] as int?) ?? 0,
-      transNo:         (m['trans_no'] as String?) ?? '',
+      id:              m['id'] ?? 0,
+      transNo:         (m['trans_no'] as String?) ?? (m['transaction_no'] as String?) ?? '',
       transactionDate: (m['transaction_date'] as String?) ?? '',
       customer:        (m['customer'] as String?) ?? '',
       salesman:        (m['salesman'] as String?) ?? '',
