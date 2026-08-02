@@ -679,8 +679,8 @@ class SalesService {
         .eq('transaction_no', transNo);
   }
 
-  // Send Monthly Excel Report email to aris@mraretail.co.id via Next.js Backend API
-  static Future<bool> sendMonthlyExcelEmail({
+  // Send Monthly Excel Report email via Next.js Backend API
+  static Future<(bool, String)> sendMonthlyExcelEmail({
     required int month,
     required int year,
     String location = 'ALL',
@@ -691,8 +691,9 @@ class SalesService {
     final monthName = monthNames[month - 1];
 
     try {
+      final targetUrl = '$apiBaseUrl/api/send-advisor-report';
       final res = await http.post(
-        Uri.parse('$apiBaseUrl/api/send-advisor-report'),
+        Uri.parse(targetUrl),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'month': monthName,
@@ -704,10 +705,14 @@ class SalesService {
         }),
       );
       print('Send Excel response: ${res.statusCode} ${res.body}');
-      return res.statusCode == 200;
+      if (res.statusCode == 200) {
+        return (true, 'OK');
+      } else {
+        return (false, 'HTTP ${res.statusCode}: ${res.body}');
+      }
     } catch (e) {
       print('Error sending email: $e');
-      return false;
+      return (false, 'Error: $e');
     }
   }
 }

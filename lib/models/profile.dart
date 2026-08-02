@@ -81,40 +81,49 @@ class CrmProfile {
   }
 
   factory CrmProfile.fromMap(Map<String, dynamic> m) {
+    int parsedId = 0;
+    if (m['id'] is num) {
+      parsedId = (m['id'] as num).toInt();
+    } else if (m['id'] is String) {
+      parsedId = int.tryParse(m['id'] as String) ?? 0;
+    }
+
+    String s(dynamic v) => v?.toString() ?? '';
+
     return CrmProfile(
-      id:                    ((m['id'] as num?) ?? 0).toInt(),
-      namaLengkap:           (m['nama_lengkap'] as String?) ?? '',
-      namaPanggilan:         (m['nama_panggilan'] as String?) ?? '',
-      title:                 (m['title'] as String?) ?? '',
-      fullNameTittle:        (m['full_name_tittle'] as String?) ?? '',
-      customerAdvisor:       (m['customer_advisor'] as String?) ?? '',
-      lokasiStore:           (m['lokasi_store'] as String?) ?? '',
-      noHp:                  (m['no_hp'] as String?) ?? '',
-      email:                 (m['email'] as String?) ?? '',
-      umur:                  (m['umur'] as String?) ?? '',
-      tinggiBadan:           (m['tinggi_badan'] as String?) ?? '',
-      bentukTubuh:           (m['bentuk_tubuh'] as String?) ?? '',
-      domisili:              (m['domisili'] as String?) ?? '',
-      kewarganegaraan:       (m['kewarganegaraan'] as String?) ?? '',
-      statusPelanggan:       (m['status_pelanggan'] as String?) ?? '',
-      statusPernikahan:      (m['status_pernikahan'] as String?) ?? '',
-      memilikiAnak:          (m['memiliki_anak'] as String?) ?? '',
-      pekerjaan:             (m['pekerjaan'] as String?) ?? '',
-      fashionStyle:          (m['fashion_style'] as String?) ?? '',
-      hobby:                 (m['hobby'] as String?) ?? '',
-      hobbyKategori:         (m['hobby_kategori'] as String?) ?? '',
-      warnaFavorit:          (m['warna_favorit'] as String?) ?? '',
-      makananFavorit:        (m['makanan_favorit'] as String?) ?? '',
-      minumanFavorit:        (m['minuman_favorit'] as String?) ?? '',
-      alergiMakanan:         (m['alergi_makanan'] as String?) ?? '',
-      tempatLiburanFavorit:  (m['tempat_liburan_favorit'] as String?) ?? '',
-      instagram:             (m['instagram'] as String?) ?? '',
-      tiktok:                (m['tiktok'] as String?) ?? '',
-      karakter:              (m['karakter'] as String?) ?? '',
-      faktorPemicuPembelian: (m['faktor_pemicu_pembelian'] as String?) ?? '',
-      barangAntusias:        (m['barang_antusias'] as String?) ?? '',
-      tanggalLahir:          m['tanggal_lahir'] as String?,
-      createdAt:             (m['created_at'] as String?) ?? '',
+      id:                    parsedId,
+      namaLengkap:           s(m['nama_lengkap'] ?? m['customerName'] ?? m['customer_name'] ?? m['name']),
+      namaPanggilan:         s(m['nama_panggilan'] ?? m['nickname']),
+      title:                 s(m['title']),
+      fullNameTittle:        s(m['full_name_tittle'] ?? m['fullNameTitle'] ?? m['nama_lengkap'] ?? m['customerName']),
+      customerAdvisor:       s(m['customer_advisor'] ?? m['customerAdvisor'] ?? m['salesman']),
+      lokasiStore:           s(m['lokasi_store'] ?? m['lokasiStore'] ?? m['store'] ?? m['location']),
+      noHp:                  s(m['no_hp'] ?? m['phone_no'] ?? m['phone']),
+      email:                 s(m['email']),
+      umur:                  s(m['umur'] ?? m['age']),
+      tinggiBadan:           s(m['tinggi_badan']),
+      bentukTubuh:           s(m['bentuk_tubuh']),
+      domisili:              s(m['domisili'] ?? m['city']),
+      kewarganegaraan:       s(m['kewarganegaraan']),
+      statusPelanggan:       s(m['status_pelanggan'] ?? m['status'] ?? m['segment']),
+      statusPernikahan:      s(m['status_pernikahan']),
+      memilikiAnak:          s(m['memiliki_anak']),
+      pekerjaan:             s(m['pekerjaan'] ?? m['occupation']),
+      fashionStyle:          s(m['fashion_style']),
+      hobby:                 s(m['hobby']),
+      hobbyKategori:         s(m['hobby_kategori']),
+      warnaFavorit:          s(m['warna_favorit']),
+      makananFavorit:        s(m['makanan_favorit']),
+      minumanFavorit:        s(m['minuman_favorit']),
+      alergiMakanan:         s(m['alergi_makanan']),
+      tempatLiburanFavorit:  s(m['tempat_liburan_favorit']),
+      instagram:             s(m['instagram']),
+      tiktok:                s(m['tiktok']),
+      karakter:              s(m['karakter']),
+      faktorPemicuPembelian: s(m['faktor_pemicu_pembelian']),
+      barangAntusias:        s(m['barang_antusias']),
+      tanggalLahir:          m['tanggal_lahir']?.toString(),
+      createdAt:             s(m['created_at']),
     );
   }
 }

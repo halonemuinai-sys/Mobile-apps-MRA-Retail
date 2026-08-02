@@ -82,11 +82,23 @@ class _CustomerSegmentScreenState extends State<CustomerSegmentScreen> {
     final currentYear = DateTime.now().year;
 
     // Load KPIs, counts, and initial customers in parallel
-    Future.wait([
-      _loadKPIs(currentYear),
-      _loadCounts(),
-      _loadInitialCustomers(),
-    ]);
+    try {
+      await Future.wait([
+        _loadKPIs(currentYear),
+        _loadCounts(),
+        _loadInitialCustomers(),
+      ]);
+    } catch (e) {
+      debugPrint('Error in _loadAll: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loadingKpis = false;
+          _loadingCounts = false;
+          _loadingCustomers = false;
+        });
+      }
+    }
   }
 
   Future<void> _loadKPIs(int year) async {

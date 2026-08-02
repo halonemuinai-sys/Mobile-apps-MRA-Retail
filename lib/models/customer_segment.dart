@@ -20,15 +20,32 @@ class CustomerSegmentProfile {
   });
 
   factory CustomerSegmentProfile.fromMap(Map<String, dynamic> map) {
+    int parseInt(dynamic val, [int fallback = 0]) {
+      if (val is num) return val.toInt();
+      if (val is String) return int.tryParse(val) ?? fallback;
+      return fallback;
+    }
+
+    double parseDouble(dynamic val, [double fallback = 0.0]) {
+      if (val is num) return val.toDouble();
+      if (val is String) return double.tryParse(val) ?? fallback;
+      return fallback;
+    }
+
+    String parseString(dynamic val, [String fallback = '']) {
+      if (val == null) return fallback;
+      return val.toString();
+    }
+
     return CustomerSegmentProfile(
-      name: map['name'] ?? '',
-      segment: map['segment'] ?? 'Prospect',
-      freqInvoice: (map['freq_invoice'] as num?)?.toInt() ?? 0,
-      freqQty: (map['freq_qty'] as num?)?.toInt() ?? 0,
-      recencyDays: (map['recency_days'] as num?)?.toInt() ?? 9999,
-      ltv: (map['ltv'] as num?)?.toDouble() ?? 0.0,
-      firstVisit: map['first_visit'] ?? '',
-      lastVisit: map['last_visit'] ?? '',
+      name: parseString(map['name'] ?? map['customerName'] ?? map['customer_name'] ?? map['nama_lengkap']),
+      segment: parseString(map['segment'] ?? map['status'] ?? map['status_pelanggan'], 'Prospect'),
+      freqInvoice: parseInt(map['freq_invoice'] ?? map['freqInvoice'] ?? map['invoices']),
+      freqQty: parseInt(map['freq_qty'] ?? map['freqQty'] ?? map['itemsCount']),
+      recencyDays: parseInt(map['recency_days'] ?? map['recencyDays'] ?? map['recency'], 9999),
+      ltv: parseDouble(map['ltv'] ?? map['totalLtv'] ?? map['netSales']),
+      firstVisit: parseString(map['first_visit'] ?? map['firstVisit']),
+      lastVisit: parseString(map['last_visit'] ?? map['lastVisit']),
     );
   }
 }

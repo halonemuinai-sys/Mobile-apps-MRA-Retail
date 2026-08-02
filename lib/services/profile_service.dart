@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/profile.dart';
 
@@ -5,32 +7,47 @@ class ProfileService {
   static final _sb = Supabase.instance.client;
 
   static Future<List<CrmProfile>> search(String query, {String store = '', String advisor = ''}) async {
-    // Build filter string for .or()
-    String? orFilter;
-    if (query.isNotEmpty) {
-      orFilter = 'nama_lengkap.ilike.%$query%,no_hp.ilike.%$query%,nama_panggilan.ilike.%$query%';
+    // 1. Try Proxmox API Endpoint first
+    try {
+      final proxmoxUrl = Uri.parse(
+        'http://202.6.239.245/api/mobile/segmentation?search=${Uri.encodeComponent(query)}&store=${Uri.encodeComponent(store)}&advisor=${Uri.encodeComponent(advisor)}'
+      );
+      final res = await http.get(proxmoxUrl).timeout(const Duration(seconds: 5));
+      if (res.statusCode == 200) {
+        final json = jsonDecode(res.body);
+        final list = (json['data']?['customers'] ?? json['customers'] ?? json['data']) as List?;
+        if (list != null) {
+          return list.map((r) => CrmProfile.fromMap(r as Map<String, dynamic>)).toList();
+        }
+      }
+    } catch (e) {
+      print('Proxmox API fetch failed, falling back to Supabase: $e');
     }
 
-    var q = _sb.from('crm_profiling').select();
+    // 2. Fallback to Supabase direct query
+    try {
+      dynamic q = _sb.from('crm_profiling').select();
 
-    // 1. Filter by Advisor (Data Melekat ke Advisor)
-    if (advisor.isNotEmpty) {
-      q = q.ilike('customer_advisor', '%$advisor%') as dynamic;
+      if (advisor.isNotEmpty && advisor != 'All Stores') {
+        q = q.ilike('customer_advisor', '%$advisor%');
+      }
+
+      if (store.isNotEmpty && store != 'All Stores') {
+        final storeKey = store.split(' ').last;
+        q = q.ilike('lokasi_store', '%$storeKey%');
+      }
+
+      if (query.isNotEmpty) {
+        final orFilter = 'nama_lengkap.ilike.%$query%,no_hp.ilike.%$query%,nama_panggilan.ilike.%$query%';
+        q = q.or(orFilter);
+      }
+
+      final res = await q.order('nama_lengkap').limit(50);
+      return (res as List).map((r) => CrmProfile.fromMap(r as Map<String, dynamic>)).toList();
+    } catch (e) {
+      print('Error in ProfileService.search Supabase fallback: $e');
+      return [];
     }
-
-    // 2. Filter by Store (Optional)
-    if (store.isNotEmpty) {
-      final storeKey = store.split(' ').last;
-      q = (q as dynamic).ilike('lokasi_store', '%$storeKey%');
-    }
-
-    // 3. Search query
-    if (orFilter != null) {
-      q = q.or(orFilter) as dynamic;
-    }
-
-    final res = await (q as dynamic).order('nama_lengkap').limit(30);
-    return (res as List).map((r) => CrmProfile.fromMap(r as Map<String, dynamic>)).toList();
   }
 
   static Future<void> createProfile(Map<String, dynamic> data) async {

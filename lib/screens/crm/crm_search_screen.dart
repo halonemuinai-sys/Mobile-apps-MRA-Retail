@@ -20,6 +20,20 @@ class _CrmSearchScreenState extends State<CrmSearchScreen> {
   bool _searched = false;
   List<CrmProfile> _results = [];
 
+  @override
+  void initState() {
+    super.initState();
+    _search();
+  }
+
+  @override
+  void didUpdateWidget(covariant CrmSearchScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.advisor.store != widget.advisor.store || oldWidget.advisor.name != widget.advisor.name) {
+      _search();
+    }
+  }
+
   Future<void> _search() async {
     final q = _ctrl.text.trim();
     setState(() { _loading = true; _searched = true; });
@@ -110,15 +124,24 @@ class _CrmSearchScreenState extends State<CrmSearchScreen> {
 
           // Results
           Expanded(
-            child: !_searched
-                ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Icon(Icons.person_search, size: 48, color: Colors.grey.shade300),
-                    const SizedBox(height: 12),
-                    const Text('Cari pelanggan by nama atau nomor HP',
-                      style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13)),
-                  ]))
+            child: _loading
+                ? const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF1E40AF)),
+                  )
                 : _results.isEmpty
-                    ? const Center(child: Text('Tidak ada hasil', style: TextStyle(color: Color(0xFF94A3B8))))
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.person_search_outlined, size: 56, color: Colors.grey.shade400),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'Belum ada data pelanggan ditemukan',
+                              style: TextStyle(color: Color(0xFF64748B), fontSize: 14, fontWeight: FontWeight.w500),
+                            ),
+                          ],
+                        ),
+                      )
                     : ListView.builder(
                         padding: const EdgeInsets.all(12),
                         itemCount: _results.length,

@@ -25,12 +25,12 @@ android {
         create("production") {
             dimension = "version"
             applicationId = "com.mraretail.bvlgari_advisor"
-            resValue("string", "app_name", "Advisor MPI")
+            resValue("string", "app_name", "MPI Advisor BVL")
         }
         create("trial") {
             dimension = "version"
             applicationId = "com.mraretail.bvlgari_advisor.trial"
-            resValue("string", "app_name", "Advisor MPI Trial")
+            resValue("string", "app_name", "MPI Advisor BVL Trial")
         }
     }
 

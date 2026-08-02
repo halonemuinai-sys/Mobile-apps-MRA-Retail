@@ -232,7 +232,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     );
 
     try {
-      final success = await SalesService.sendMonthlyExcelEmail(
+      final (success, errMsg) = await SalesService.sendMonthlyExcelEmail(
         month: widget.month,
         year: widget.year,
         location: locationName,
@@ -255,9 +255,10 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Gagal mengirim email. Pastikan server backend aktif.'),
+            SnackBar(
+              content: Text('Gagal mengirim email: $errMsg'),
               backgroundColor: Colors.red,
+              duration: const Duration(seconds: 8),
             ),
           );
         }

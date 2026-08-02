@@ -3,6 +3,7 @@ import 'package:crypto/crypto.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/advisor.dart';
+import 'api_service.dart';
 
 class AuthService {
   static final _sb = Supabase.instance.client;
@@ -39,7 +40,28 @@ class AuthService {
     return (res as List).map((r) => r['name'] as String).toList();
   }
 
-  static Future<Advisor?> login(String name, String pin) async {
+  static Future<Advisor?> login(String name, String pin, {String store = ''}) async {
+    // 1. Try Proxmox API Login first
+    final apiResult = await ApiService.login(name, pin, store: store);
+    if (apiResult != null && apiResult['advisor'] != null) {
+      final advData = apiResult['advisor'];
+      final advisor = Advisor(
+        name: advData['name'] ?? name,
+        role: advData['role'] ?? 'advisor',
+        store: advData['store'] ?? store,
+        homeLocation: advData['homeLocation'] ?? store,
+      );
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('advisor_name', advisor.name);
+      await prefs.setString('advisor_role', advisor.role);
+      await prefs.setString('advisor_store', advisor.store);
+      await prefs.setString('advisor_home', advisor.homeLocation);
+
+      return advisor;
+    }
+
+    // 2. Fallback to direct Supabase PIN verification if offline
     final hash = _hashPin(pin);
     final res = await _sb
         .from('advisor_pins')

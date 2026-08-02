@@ -260,7 +260,7 @@ class _MainShellState extends State<MainShell> {
 
     // ── Shared content area ──
     final content = Column(children: [
-      _buildFilterBar(),
+      if (_tab != 2) _buildFilterBar(),
       Container(height: 1, color: const Color(0xFFF1F5F9)),
       Expanded(child: IndexedStack(index: _tab, children: screens)),
     ]);

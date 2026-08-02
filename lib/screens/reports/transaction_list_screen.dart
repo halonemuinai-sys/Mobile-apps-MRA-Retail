@@ -278,7 +278,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     );
 
     try {
-      final success = await SalesService.sendMonthlyExcelEmail(
+      final (success, errMsg) = await SalesService.sendMonthlyExcelEmail(
         month: widget.month,
         year: widget.year,
         location: locationName,
@@ -301,9 +301,10 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Gagal mengirim email. Pastikan server backend aktif.'),
+            SnackBar(
+              content: Text('Gagal mengirim email: $errMsg'),
               backgroundColor: Colors.red,
+              duration: const Duration(seconds: 8),
             ),
           );
         }
