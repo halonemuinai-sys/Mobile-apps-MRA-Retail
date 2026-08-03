@@ -26,6 +26,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   bool _isDpsSvc = false;
   String _subTab = 'ALL'; // 'ALL', 'DPS', 'SVC'
   String _locTab = 'ALL';
+  String _sortBy = 'date_desc'; // 'date_desc', 'date_asc', 'no_asc', 'no_desc', 'sales_desc', 'sales_asc'
   List<Transaction> _transactions = [];
   List<Transaction> _filtered = [];
   final TextEditingController _searchCtrl = TextEditingController();
@@ -79,7 +80,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   void _applyFilters() {
     final q = _searchCtrl.text.toLowerCase();
     setState(() {
-      _filtered = _transactions.where((t) {
+      var temp = _transactions.where((t) {
         if (_isDpsSvc && _subTab != 'ALL') {
           final coll = t.collection.toUpperCase();
           if (_subTab == 'DPS' && !coll.contains('DPS')) return false;
@@ -97,7 +98,63 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                t.collection.toLowerCase().contains(q) ||
                t.location.toLowerCase().contains(q);
       }).toList();
+
+      if (_sortBy == 'date_desc') {
+        temp.sort((a, b) => b.transactionDate.compareTo(a.transactionDate));
+      } else if (_sortBy == 'date_asc') {
+        temp.sort((a, b) => a.transactionDate.compareTo(b.transactionDate));
+      } else if (_sortBy == 'no_asc') {
+        temp.sort((a, b) => a.transNo.compareTo(b.transNo));
+      } else if (_sortBy == 'no_desc') {
+        temp.sort((a, b) => b.transNo.compareTo(a.transNo));
+      } else if (_sortBy == 'sales_desc') {
+        temp.sort((a, b) => b.netSales.compareTo(a.netSales));
+      } else if (_sortBy == 'sales_asc') {
+        temp.sort((a, b) => a.netSales.compareTo(b.netSales));
+      }
+
+      _filtered = temp;
     });
+  }
+
+  void _showSortDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Urutkan Transaksi', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _sortOption('Tanggal: Terbaru', 'date_desc'),
+            _sortOption('Tanggal: Terlama', 'date_asc'),
+            _sortOption('Nomor Invoice: A - Z', 'no_asc'),
+            _sortOption('Nomor Invoice: Z - A', 'no_desc'),
+            _sortOption('Net Sales: Tertinggi', 'sales_desc'),
+            _sortOption('Net Sales: Terendah', 'sales_asc'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sortOption(String label, String value) {
+    final active = _sortBy == value;
+    return ListTile(
+      title: Text(label, style: TextStyle(
+        fontSize: 13, 
+        fontWeight: active ? FontWeight.bold : FontWeight.normal,
+        color: active ? AppTheme.primary : AppTheme.dark,
+      )),
+      trailing: active ? const Icon(Icons.check_circle, color: AppTheme.primary, size: 20) : null,
+      onTap: () {
+        setState(() {
+          _sortBy = value;
+          _applyFilters();
+        });
+        Navigator.pop(context);
+      },
+    );
   }
 
   void _onSearch() {
@@ -511,6 +568,11 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
         centerTitle: true,
         actions: [
           IconButton(
+            icon: const Icon(Icons.sort_rounded, color: AppTheme.primary),
+            tooltip: 'Urutkan',
+            onPressed: _showSortDialog,
+          ),
+          IconButton(
             icon: const Icon(Icons.mark_email_read_outlined, color: Color(0xFF10B981)),
             tooltip: 'Kirim Email Excel ke aris@mraretail.co.id',
             onPressed: () => _sendExcelReportEmail(),
@@ -742,8 +804,28 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                                   Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(t.transNo, 
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.primary)),
+                                      Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: AppTheme.primary.withValues(alpha: 0.1),
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: Text(
+                                              '#$index',
+                                              style: const TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                                color: AppTheme.primary,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(t.transNo, 
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.primary)),
+                                        ],
+                                      ),
                                       const SizedBox(height: 2),
                                       Text(t.transactionDate, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
                                     ],

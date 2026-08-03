@@ -1,5 +1,3 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'api_service.dart';
 
@@ -24,7 +22,9 @@ class SyncService {
   static final _sb = Supabase.instance.client;
 
   /// Main sync function — uses Proxmox Server-Side Sync with fallback
-  static Future<SyncResult> syncSalesData(int month, int year, {
+  static Future<SyncResult> syncSalesData(
+    int month,
+    int year, {
     void Function(String status)? onProgress,
   }) async {
     try {

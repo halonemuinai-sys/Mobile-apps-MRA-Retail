@@ -10,9 +10,7 @@ class SalesService {
   static String get apiBaseUrl {
     const customUrl = String.fromEnvironment('API_URL');
     if (customUrl.isNotEmpty) return customUrl;
-    if (kIsWeb) return 'http://localhost:3000';
-    // Skenario A: Production Cloud Server Endpoint (Vercel / Cloud Domain)
-    return 'https://dashboard-bvl-next.vercel.app';
+    return 'http://202.6.239.245';
   }
 
   static String _pad(int n) => n.toString().padLeft(2, '0');

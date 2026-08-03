@@ -28,7 +28,11 @@ class ApiService {
   }
 
   /// 1. Mobile Login via Proxmox API
-  static Future<Map<String, dynamic>?> login(String name, String pin, {String store = ''}) async {
+  static Future<Map<String, dynamic>?> login(
+    String name,
+    String pin, {
+    String store = '',
+  }) async {
     try {
       final res = await http.post(
         Uri.parse('$baseUrl/auth/login'),
@@ -57,12 +61,14 @@ class ApiService {
   }) async {
     try {
       final headers = await _getHeaders();
-      final uri = Uri.parse('$baseUrl/dashboard').replace(queryParameters: {
-        if (store.isNotEmpty) 'store': store,
-        if (advisor.isNotEmpty) 'advisor': advisor,
-        if (month != null) 'month': month.toString(),
-        if (year != null) 'year': year.toString(),
-      });
+      final uri = Uri.parse('$baseUrl/dashboard').replace(
+        queryParameters: {
+          if (store.isNotEmpty) 'store': store,
+          if (advisor.isNotEmpty) 'advisor': advisor,
+          if (month != null) 'month': month.toString(),
+          if (year != null) 'year': year.toString(),
+        },
+      );
       final res = await http.get(uri, headers: headers);
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
@@ -82,11 +88,13 @@ class ApiService {
   }) async {
     try {
       final headers = await _getHeaders();
-      final uri = Uri.parse('$baseUrl/leaderboard').replace(queryParameters: {
-        if (store.isNotEmpty) 'store': store,
-        if (month != null) 'month': month.toString(),
-        if (year != null) 'year': year.toString(),
-      });
+      final uri = Uri.parse('$baseUrl/leaderboard').replace(
+        queryParameters: {
+          if (store.isNotEmpty) 'store': store,
+          if (month != null) 'month': month.toString(),
+          if (year != null) 'year': year.toString(),
+        },
+      );
       final res = await http.get(uri, headers: headers);
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
@@ -107,12 +115,14 @@ class ApiService {
   }) async {
     try {
       final headers = await _getHeaders();
-      final uri = Uri.parse('$baseUrl/segmentation').replace(queryParameters: {
-        if (store.isNotEmpty) 'store': store,
-        if (segment.isNotEmpty) 'segment': segment,
-        if (search.isNotEmpty) 'search': search,
-        'page': page.toString(),
-      });
+      final uri = Uri.parse('$baseUrl/segmentation').replace(
+        queryParameters: {
+          if (store.isNotEmpty) 'store': store,
+          if (segment.isNotEmpty) 'segment': segment,
+          if (search.isNotEmpty) 'search': search,
+          'page': page.toString(),
+        },
+      );
       final res = await http.get(uri, headers: headers);
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
@@ -132,11 +142,13 @@ class ApiService {
   }) async {
     try {
       final headers = await _getHeaders();
-      final uri = Uri.parse('$baseUrl/reports').replace(queryParameters: {
-        if (store.isNotEmpty) 'store': store,
-        if (month != null) 'month': month.toString(),
-        if (year != null) 'year': year.toString(),
-      });
+      final uri = Uri.parse('$baseUrl/reports').replace(
+        queryParameters: {
+          if (store.isNotEmpty) 'store': store,
+          if (month != null) 'month': month.toString(),
+          if (year != null) 'year': year.toString(),
+        },
+      );
       final res = await http.get(uri, headers: headers);
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
@@ -160,8 +172,8 @@ class ApiService {
         Uri.parse('$baseUrl/sync'),
         headers: headers,
         body: jsonEncode({
-          if (month != null) 'month': month,
-          if (year != null) 'year': year,
+          'month': ?month,
+          'year': ?year,
           if (location.isNotEmpty) 'location': location,
         }),
       );
