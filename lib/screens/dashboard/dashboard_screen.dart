@@ -157,7 +157,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Pilih butik & tujuan email untuk periode $mName ${widget.year}:',
+              Text('Pilih butik — laporan $mName ${widget.year}:',
                 style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
               const SizedBox(height: 16),
               _storeEmailOption('Plaza Indonesia', 'pi@mogems.co.id', Icons.location_city, const Color(0xFFB45309)),
@@ -223,7 +223,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
           children: [
             const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
             const SizedBox(width: 12),
-            Expanded(child: Text('Mengirim Excel $locationName ke $emailTarget (CC: aris@mraretail.co.id, jessica@mogems.co.id)...')),
+            Expanded(child: Text('Mengirim laporan ke $emailTarget...')),
           ],
         ),
         backgroundColor: const Color(0xFF0F172A),
@@ -246,7 +246,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Sukses! Berkas Excel $locationName $mName ${widget.year} terkirim ke $emailTarget (CC: aris, jessica)'),
+              content: Text('Laporan $locationName $mName ${widget.year} terkirim ke $emailTarget'),
               backgroundColor: const Color(0xFF16A34A),
               duration: const Duration(seconds: 5),
             ),

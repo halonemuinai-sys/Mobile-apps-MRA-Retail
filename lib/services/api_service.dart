@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'sales_service.dart';
+
 class ApiService {
-  static const String baseUrl = 'http://202.6.239.245/api/mobile';
+  static String get baseUrl => '${SalesService.apiBaseUrl}/api/mobile';
 
   static Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
@@ -15,7 +17,7 @@ class ApiService {
     await prefs.setString('auth_bearer_token', token);
   }
 
-  static Future<Map<String, String>> _getHeaders() async {
+  static Future<Map<String, String>> getHeaders() async {
     final token = await getToken();
     final headers = <String, String>{
       'Content-Type': 'application/json',
@@ -60,7 +62,7 @@ class ApiService {
     int? year,
   }) async {
     try {
-      final headers = await _getHeaders();
+      final headers = await getHeaders();
       final uri = Uri.parse('$baseUrl/dashboard').replace(
         queryParameters: {
           if (store.isNotEmpty) 'store': store,
@@ -87,7 +89,7 @@ class ApiService {
     int? year,
   }) async {
     try {
-      final headers = await _getHeaders();
+      final headers = await getHeaders();
       final uri = Uri.parse('$baseUrl/leaderboard').replace(
         queryParameters: {
           if (store.isNotEmpty) 'store': store,
@@ -114,7 +116,7 @@ class ApiService {
     int page = 1,
   }) async {
     try {
-      final headers = await _getHeaders();
+      final headers = await getHeaders();
       final uri = Uri.parse('$baseUrl/segmentation').replace(
         queryParameters: {
           if (store.isNotEmpty) 'store': store,
@@ -141,7 +143,7 @@ class ApiService {
     int? year,
   }) async {
     try {
-      final headers = await _getHeaders();
+      final headers = await getHeaders();
       final uri = Uri.parse('$baseUrl/reports').replace(
         queryParameters: {
           if (store.isNotEmpty) 'store': store,
@@ -160,29 +162,4 @@ class ApiService {
     return null;
   }
 
-  /// 6. Trigger Server-Side Sync ETL on Proxmox
-  static Future<Map<String, dynamic>?> syncData({
-    int? month,
-    int? year,
-    String location = '',
-  }) async {
-    try {
-      final headers = await _getHeaders();
-      final res = await http.post(
-        Uri.parse('$baseUrl/sync'),
-        headers: headers,
-        body: jsonEncode({
-          'month': ?month,
-          'year': ?year,
-          if (location.isNotEmpty) 'location': location,
-        }),
-      );
-      if (res.statusCode == 200) {
-        return jsonDecode(res.body);
-      }
-    } catch (e) {
-      print('ApiService syncData error: $e');
-    }
-    return null;
-  }
 }

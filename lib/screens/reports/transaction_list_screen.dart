@@ -100,9 +100,17 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       }).toList();
 
       if (_sortBy == 'date_desc') {
-        temp.sort((a, b) => b.transactionDate.compareTo(a.transactionDate));
+        temp.sort((a, b) {
+          final cmp = b.transactionDate.compareTo(a.transactionDate);
+          if (cmp != 0) return cmp;
+          return b.transNo.compareTo(a.transNo);
+        });
       } else if (_sortBy == 'date_asc') {
-        temp.sort((a, b) => a.transactionDate.compareTo(b.transactionDate));
+        temp.sort((a, b) {
+          final cmp = a.transactionDate.compareTo(b.transactionDate);
+          if (cmp != 0) return cmp;
+          return a.transNo.compareTo(b.transNo);
+        });
       } else if (_sortBy == 'no_asc') {
         temp.sort((a, b) => a.transNo.compareTo(b.transNo));
       } else if (_sortBy == 'no_desc') {
@@ -260,7 +268,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Pilih butik & tujuan email untuk periode $mName ${widget.year}:',
+              Text('Pilih butik — laporan $mName ${widget.year}:',
                 style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
               const SizedBox(height: 16),
               _storeEmailOption('Plaza Indonesia', 'pi@mogems.co.id', Icons.location_city, const Color(0xFFB45309)),
@@ -326,7 +334,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
           children: [
             const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
             const SizedBox(width: 12),
-            Expanded(child: Text('Mengirim Excel $locationName ke $emailTarget (CC: aris@mraretail.co.id, jessica@mogems.co.id)...')),
+            Expanded(child: Text('Mengirim laporan ke $emailTarget...')),
           ],
         ),
         backgroundColor: const Color(0xFF0F172A),
@@ -349,7 +357,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Sukses! Berkas Excel $locationName $mName ${widget.year} terkirim ke $emailTarget (CC: aris, jessica)'),
+              content: Text('Laporan $locationName $mName ${widget.year} terkirim ke $emailTarget'),
               backgroundColor: const Color(0xFF16A34A),
               duration: const Duration(seconds: 5),
             ),
