@@ -11,7 +11,17 @@ class TrafficRow {
   final String email;
   final double netSales;
   final String statusPelanggan;
+  final String prospekLevel;
+  final String minatBarang;
+  final String aksesMasuk;
+  final String siapa;
   final String notes;
+  final String servedBy;
+  final String barangDiminati;
+  final String faktorPemicu;
+  final String groupSize;
+  final double diskonPct;
+  final String buktiChat;
 
   const TrafficRow({
     required this.id,
@@ -26,7 +36,17 @@ class TrafficRow {
     required this.email,
     required this.netSales,
     required this.statusPelanggan,
+    this.prospekLevel = '',
+    this.minatBarang = '',
+    this.aksesMasuk = '',
+    this.siapa = '',
     required this.notes,
+    this.barangDiminati = '',
+    this.servedBy = '',
+    this.faktorPemicu = '',
+    this.groupSize = '',
+    this.diskonPct = 0,
+    this.buktiChat = '',
   });
 
   factory TrafficRow.fromMap(Map<String, dynamic> m) {
@@ -43,7 +63,17 @@ class TrafficRow {
       email:             (m['email'] as String?) ?? '',
       netSales:          ((m['net_sales'] as num?) ?? 0).toDouble(),
       statusPelanggan:   (m['status_pelanggan'] as String?) ?? '',
+      prospekLevel:      (m['prospek_level'] as String?) ?? '',
+      minatBarang:       (m['minat_barang'] as String?) ?? '',
+      aksesMasuk:        (m['akses_masuk'] as String?) ?? '',
+      siapa:             (m['siapa'] as String?) ?? '',
       notes:             (m['notes'] as String?) ?? '',
+      barangDiminati:    (m['barang_diminati'] as String?) ?? '',
+      servedBy:          (m['served_by'] as String?) ?? '',
+      faktorPemicu:      (m['faktor_pemicu'] as String?) ?? '',
+      groupSize:         m['group_size']?.toString() ?? '',
+      diskonPct:         ((m['diskon_pct'] as num?) ?? 0).toDouble(),
+      buktiChat:         (m['bukti_chat'] as String?) ?? '',
     );
   }
 }

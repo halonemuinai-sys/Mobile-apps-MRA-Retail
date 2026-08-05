@@ -14,7 +14,7 @@ class MasterData {
   ];
 
   static const stores = [
-    'Plaza Indonesia', 'Plaza Senayan', 'Pop Up Senayan City', 'Bali'
+    'Plaza Indonesia', 'Plaza Senayan', 'Bali'
   ];
 
   static const hariRaya = [
@@ -33,9 +33,57 @@ class MasterData {
     'New', 'Old', 'VIP'
   ];
 
+  static const prospekLevel = [
+    'Potensial Pelanggan Baru',
+    'Dalam Tahap Negosiasi',
+    'Menunggu Respon Pelanggan',
+    'Penjualan Berhasil',
+    'Penjualan Gagal',
+  ];
+
+  static const siapa = [
+    'Turis International',
+    'Turis Domestik',
+    'Penduduk Bali WNA',
+    'Penduduk Bali WNI',
+  ];
+
+  static const aksesMasuk = [
+    'Tamu dari hotel guest',
+    'Tamu dari hotel staff',
+    'Tamu butik Bulgari',
+    'Tamu fasilitas hotel (restaurant/bar)',
+    'Instagram',
+  ];
+
+  static const groupSize = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10+'];
+
+  static const faktorPemicu = [
+    'Promo Bank',
+    'Promo Event/Marketing',
+    'Promo Mall',
+    'Masih Dalam Prospek',
+  ];
+
+  static const minatBarang = [
+    'Jewelry',
+    'Watches',
+    'Perfume',
+    'LLGA',
+    'Semi HJ',
+    'Fine Jewel 0 - 200jt',
+    'Precious 201 - 600jt',
+    'Gioielleria 601 - 999jt',
+    'Alta Gamma 1M >',
+    'Alta Gioielleria (Watches)',
+    'High End Watches',
+  ];
+
   static const memilikiAnak = [
     'YA', 'TIDAK'
   ];
+
+  static const jumlahAnak = ['0', '1', '2', '3', '4', '5+'];
 
   static const fashionStyle = [
     'Casual', 'Stylish', 'Sporty', 'Konservatif', 'Hijab', 'Simple', 'Formal'

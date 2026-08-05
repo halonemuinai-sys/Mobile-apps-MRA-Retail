@@ -78,63 +78,68 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     int pm = m - 1, py = y;
     if (pm < 1) { pm = 12; py = y - 1; }
 
-    final results = await Future.wait([
-      // 0: Value MTD Sales
-      SalesService.getMtdNetSales(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: m, year: y),
-      // 1: Value Target
-      SalesService.getTarget(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: m, year: y),
-      // 2: Value Prev MTD Sales
-      SalesService.getMtdNetSales(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: pm, year: py),
-      // 3: Tx Count
-      SalesService.getMtdTransactionCount(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: m, year: y),
-      // 4: Value Monthly Chart
-      SalesService.getMonthlyChart(advisorName: adv.name, isManager: adv.isManager, store: adv.store, year: y),
-      // 5: Prospect Counts
-      TrafficService.getProspectCounts(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: m, year: y),
-      
-      // 6: QTY MTD Sales
-      SalesService.getMtdQtySales(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: m, year: y),
-      // 7: QTY Target
-      SalesService.getQtyTarget(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: m, year: y),
-      // 8: QTY Prev MTD Sales
-      SalesService.getMtdQtySales(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: pm, year: py),
-      // 9: QTY Monthly Chart
-      SalesService.getMonthlyQtyChart(advisorName: adv.name, isManager: adv.isManager, store: adv.store, year: y),
+    try {
+      final results = await Future.wait([
+        // 0: Value MTD Sales
+        SalesService.getMtdNetSales(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: m, year: y),
+        // 1: Value Target
+        SalesService.getTarget(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: m, year: y),
+        // 2: Value Prev MTD Sales
+        SalesService.getMtdNetSales(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: pm, year: py),
+        // 3: Tx Count
+        SalesService.getMtdTransactionCount(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: m, year: y),
+        // 4: Value Monthly Chart
+        SalesService.getMonthlyChart(advisorName: adv.name, isManager: adv.isManager, store: adv.store, year: y),
+        // 5: Prospect Counts
+        TrafficService.getProspectCounts(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: m, year: y),
 
-      // 10: Store Comparison (Value)
-      (adv.isOpsManager && adv.store == 'All Stores')
-          ? SalesService.getStoreComparison(month: m, year: y)
-          : Future.value(<Map<String, dynamic>>[]),
-      // 11: Store Comparison (QTY)
-      (adv.isOpsManager && adv.store == 'All Stores')
-          ? SalesService.getStoreComparisonQty(month: m, year: y)
-          : Future.value(<Map<String, dynamic>>[]),
-      // 12: Category Breakdown
-      SalesService.getCategoryBreakdown(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: m, year: y),
-    ]);
+        // 6: QTY MTD Sales
+        SalesService.getMtdQtySales(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: m, year: y),
+        // 7: QTY Target
+        SalesService.getQtyTarget(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: m, year: y),
+        // 8: QTY Prev MTD Sales
+        SalesService.getMtdQtySales(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: pm, year: py),
+        // 9: QTY Monthly Chart
+        SalesService.getMonthlyQtyChart(advisorName: adv.name, isManager: adv.isManager, store: adv.store, year: y),
 
-    setState(() {
-      _mtd = results[0] as double;
-      _target = results[1] as double;
-      _prevMtd = results[2] as double;
-      _txCount = results[3] as int;
-      _monthly = results[4] as List<double>;
-      
-      final counts = results[5] as ProspectCounts;
-      _prospectCount = counts.total;
-      _followUpCount = counts.followUp;
+        // 10: Store Comparison (Value)
+        (adv.isOpsManager && adv.store == 'All Stores')
+            ? SalesService.getStoreComparison(month: m, year: y)
+            : Future.value(<Map<String, dynamic>>[]),
+        // 11: Store Comparison (QTY)
+        (adv.isOpsManager && adv.store == 'All Stores')
+            ? SalesService.getStoreComparisonQty(month: m, year: y)
+            : Future.value(<Map<String, dynamic>>[]),
+        // 12: Category Breakdown
+        SalesService.getCategoryBreakdown(advisorName: adv.name, isManager: adv.isManager, store: adv.store, month: m, year: y),
+      ]);
 
-      _mtdQty = results[6] as int;
-      _targetQty = results[7] as int;
-      _prevMtdQty = results[8] as int;
-      _monthlyQty = results[9] as List<int>;
-      
-      _storeComparison = results[10] as List<Map<String, dynamic>>;
-      _storeComparisonQty = results[11] as List<Map<String, dynamic>>;
-      _categories = results[12] as Map<String, Map<String, dynamic>>;
-      
-      _loading = false;
-    });
+      if (!mounted) return;
+      setState(() {
+        _mtd = results[0] as double;
+        _target = results[1] as double;
+        _prevMtd = results[2] as double;
+        _txCount = results[3] as int;
+        _monthly = results[4] as List<double>;
+
+        final counts = results[5] as ProspectCounts;
+        _prospectCount = counts.total;
+        _followUpCount = counts.followUp;
+
+        _mtdQty = results[6] as int;
+        _targetQty = results[7] as int;
+        _prevMtdQty = results[8] as int;
+        _monthlyQty = results[9] as List<int>;
+
+        _storeComparison = results[10] as List<Map<String, dynamic>>;
+        _storeComparisonQty = results[11] as List<Map<String, dynamic>>;
+        _categories = results[12] as Map<String, Map<String, dynamic>>;
+      });
+    } catch (e) {
+      debugPrint('Dashboard load error: $e');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   Future<void> _sendExcelFromDashboard() async {

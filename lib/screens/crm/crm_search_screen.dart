@@ -36,6 +36,7 @@ class _CrmSearchScreenState extends State<CrmSearchScreen> {
 
   Future<void> _search() async {
     final q = _ctrl.text.trim();
+    if (!mounted) return;
     setState(() { _loading = true; _searched = true; });
     try {
       final data = await ProfileService.search(
@@ -43,11 +44,11 @@ class _CrmSearchScreenState extends State<CrmSearchScreen> {
         store: widget.advisor.store == 'All Stores' ? '' : widget.advisor.store,
         advisor: (widget.advisor.isManager || widget.advisor.isOpsManager) ? '' : widget.advisor.name,
       );
-      setState(() { _results = data; });
+      if (mounted) setState(() { _results = data; });
     } catch (e) {
       debugPrint('CRM search error: $e');
     } finally {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 

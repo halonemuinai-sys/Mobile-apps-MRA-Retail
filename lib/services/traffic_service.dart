@@ -104,7 +104,30 @@ class TrafficService {
     return map;
   }
 
-  static Future<void> saveTraffic(Map<String, dynamic> data) async {
-    await _sb.from('mirror_traffic').insert(data);
+  static Future<int> saveTraffic(Map<String, dynamic> data) async {
+    final res = await _sb
+        .from('mirror_traffic')
+        .insert(data)
+        .select('id')
+        .single();
+    return (res['id'] as num).toInt();
+  }
+
+  static Future<void> saveTrafficItems(int trafficId, List<Map<String, dynamic>> items) async {
+    if (items.isEmpty) return;
+    await _sb.from('traffic_items').insert(
+      items.map((i) => {...i, 'traffic_id': trafficId}).toList(),
+    );
+  }
+
+  static Future<List<TrafficRow>> getTrafficByCustomer(String name, {String noHp = ''}) async {
+    var q = _sb.from('mirror_traffic').select();
+    if (noHp.isNotEmpty) {
+      q = q.or('customer_name.ilike.%$name%,no_hp.eq.$noHp');
+    } else {
+      q = q.ilike('customer_name', '%$name%');
+    }
+    final res = await q.order('tanggal_berkunjung', ascending: false).limit(20);
+    return (res as List).map((r) => TrafficRow.fromMap(r)).toList();
   }
 }

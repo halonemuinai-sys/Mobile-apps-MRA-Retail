@@ -1,5 +1,3 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/profile.dart';
 
@@ -7,24 +5,7 @@ class ProfileService {
   static final _sb = Supabase.instance.client;
 
   static Future<List<CrmProfile>> search(String query, {String store = '', String advisor = ''}) async {
-    // 1. Try Proxmox API Endpoint first
-    try {
-      final proxmoxUrl = Uri.parse(
-        'http://202.6.239.245/api/mobile/segmentation?search=${Uri.encodeComponent(query)}&store=${Uri.encodeComponent(store)}&advisor=${Uri.encodeComponent(advisor)}'
-      );
-      final res = await http.get(proxmoxUrl).timeout(const Duration(seconds: 5));
-      if (res.statusCode == 200) {
-        final json = jsonDecode(res.body);
-        final list = (json['data']?['customers'] ?? json['customers'] ?? json['data']) as List?;
-        if (list != null) {
-          return list.map((r) => CrmProfile.fromMap(r as Map<String, dynamic>)).toList();
-        }
-      }
-    } catch (e) {
-      print('Proxmox API fetch failed, falling back to Supabase: $e');
-    }
-
-    // 2. Fallback to Supabase direct query
+    // Query Supabase crm_profiling directly for full profile data
     try {
       dynamic q = _sb.from('crm_profiling').select();
 

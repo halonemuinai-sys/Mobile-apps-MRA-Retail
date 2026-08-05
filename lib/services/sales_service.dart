@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/transaction.dart';
@@ -10,7 +9,7 @@ class SalesService {
   static String get apiBaseUrl {
     const customUrl = String.fromEnvironment('API_URL');
     if (customUrl.isNotEmpty) return customUrl;
-    return 'http://202.6.239.245';
+    return 'https://dashboard-bvl-next.vercel.app';
   }
 
   static String _pad(int n) => n.toString().padLeft(2, '0');
@@ -46,7 +45,10 @@ class SalesService {
       q = q.eq('salesman', advisorName);
     }
     final res = await q;
-    return (res as List).fold<double>(0.0, (sum, r) => sum + ((r['net_sales'] as num?) ?? 0).toDouble());
+    return (res as List).fold<double>(
+      0.0,
+      (sum, r) => sum + ((r['net_sales'] as num?) ?? 0).toDouble(),
+    );
   }
 
   // Target for advisor/store in month
@@ -67,7 +69,10 @@ class SalesService {
         q = q.ilike('store_name', '%${store.split(' ').last}%');
       }
       final res = await q;
-      return (res as List).fold<double>(0.0, (s, r) => s + ((r['target_value'] as num?) ?? 0).toDouble());
+      return (res as List).fold<double>(
+        0.0,
+        (s, r) => s + ((r['target_value'] as num?) ?? 0).toDouble(),
+      );
     } else {
       final res = await _sb
           .from('advisor_targets')
@@ -178,8 +183,11 @@ class SalesService {
     for (final r in res as List) {
       final cat = (r['main_category'] as String?) ?? 'Other';
       map.putIfAbsent(cat, () => {'net': 0.0, 'qty': 0});
-      map[cat]!['net'] = (map[cat]!['net'] as double) + ((r['net_sales'] as num?) ?? 0).toDouble();
-      map[cat]!['qty'] = (map[cat]!['qty'] as int) + ((r['qty'] as num?) ?? 0).toInt();
+      map[cat]!['net'] =
+          (map[cat]!['net'] as double) +
+          ((r['net_sales'] as num?) ?? 0).toDouble();
+      map[cat]!['qty'] =
+          (map[cat]!['qty'] as int) + ((r['qty'] as num?) ?? 0).toInt();
     }
     return map;
   }
@@ -194,7 +202,10 @@ class SalesService {
 
     // Previous month range
     int pm = month - 1, py = year;
-    if (pm < 1) { pm = 12; py = year - 1; }
+    if (pm < 1) {
+      pm = 12;
+      py = year - 1;
+    }
     final (prevFrom, prevTo) = _monthRange(pm, py);
 
     // Current month sales by salesman
@@ -213,7 +224,8 @@ class SalesService {
     for (final r in res as List) {
       final name = (r['salesman'] as String?) ?? '';
       if (name.isEmpty) continue;
-      salesMap[name] = (salesMap[name] ?? 0) + ((r['net_sales'] as num?) ?? 0).toDouble();
+      salesMap[name] =
+          (salesMap[name] ?? 0) + ((r['net_sales'] as num?) ?? 0).toDouble();
     }
 
     if (salesMap.isEmpty) return [];
@@ -234,7 +246,8 @@ class SalesService {
     for (final r in prevRes as List) {
       final name = (r['salesman'] as String?) ?? '';
       if (name.isEmpty) continue;
-      prevMap[name] = (prevMap[name] ?? 0) + ((r['net_sales'] as num?) ?? 0).toDouble();
+      prevMap[name] =
+          (prevMap[name] ?? 0) + ((r['net_sales'] as num?) ?? 0).toDouble();
     }
 
     // Individual advisor targets
@@ -255,7 +268,9 @@ class SalesService {
       final target = targetMap[e.key] ?? 0;
       final ach = target > 0 ? (e.value / target * 100) : 0.0;
       final prev = prevMap[e.key] ?? 0;
-      final growth = prev > 0 ? ((e.value - prev) / prev * 100) : (e.value > 0 ? 100.0 : 0.0);
+      final growth = prev > 0
+          ? ((e.value - prev) / prev * 100)
+          : (e.value > 0 ? 100.0 : 0.0);
 
       return {
         'name': e.key,
@@ -281,7 +296,10 @@ class SalesService {
 
     // Previous month
     int pm = month - 1, py = year;
-    if (pm < 1) { pm = 12; py = year - 1; }
+    if (pm < 1) {
+      pm = 12;
+      py = year - 1;
+    }
     final (prevFrom, prevTo) = _monthRange(pm, py);
 
     // Fetch all sales for the month (excluding head office)
@@ -364,7 +382,9 @@ class SalesService {
       final target = targetMap[key] ?? 0;
       final prev = prevSalesMap[key] ?? 0;
       final ach = target > 0 ? (sales / target * 100) : 0.0;
-      final growth = prev > 0 ? ((sales - prev) / prev * 100) : (sales > 0 ? 100.0 : 0.0);
+      final growth = prev > 0
+          ? ((sales - prev) / prev * 100)
+          : (sales > 0 ? 100.0 : 0.0);
 
       result.add({
         'key': key,
@@ -377,7 +397,9 @@ class SalesService {
       });
     }
 
-    result.sort((a, b) => (b['sales'] as double).compareTo(a['sales'] as double));
+    result.sort(
+      (a, b) => (b['sales'] as double).compareTo(a['sales'] as double),
+    );
     return result;
   }
 
@@ -409,21 +431,22 @@ class SalesService {
 
   // Update commission for a transaction
   static Future<void> updateCommission(int id, double value) async {
-    await _sb
-        .from('clean_master')
-        .update({'comm': value})
-        .eq('id', id);
+    await _sb.from('clean_master').update({'comm': value}).eq('id', id);
   }
 
   /// Get available stores from advisors table
   static Future<List<String>> getAvailableStores() async {
-    final res = await _sb.from('advisors').select('home_location').order('home_location');
-    final stores = (res as List)
-        .map((r) => (r['home_location'] as String?) ?? '')
-        .where((s) => s.isNotEmpty)
-        .toSet()
-        .toList()
-      ..sort();
+    final res = await _sb
+        .from('advisors')
+        .select('home_location')
+        .order('home_location');
+    final stores =
+        (res as List)
+            .map((r) => (r['home_location'] as String?) ?? '')
+            .where((s) => s.isNotEmpty)
+            .toSet()
+            .toList()
+          ..sort();
     return stores;
   }
 
@@ -450,7 +473,10 @@ class SalesService {
       q = q.eq('salesman', advisorName);
     }
     final res = await q;
-    return (res as List).fold<int>(0, (sum, r) => sum + ((r['qty'] as num?) ?? 0).toInt());
+    return (res as List).fold<int>(
+      0,
+      (sum, r) => sum + ((r['qty'] as num?) ?? 0).toInt(),
+    );
   }
 
   // QTY Target for advisor/store in month
@@ -471,7 +497,10 @@ class SalesService {
         q = q.ilike('store_name', '%${store.split(' ').last}%');
       }
       final res = await q;
-      return (res as List).fold<int>(0, (s, r) => s + ((r['target_qty'] as num?) ?? 0).toInt());
+      return (res as List).fold<int>(
+        0,
+        (s, r) => s + ((r['target_qty'] as num?) ?? 0).toInt(),
+      );
     } else {
       // Individual advisors don't have QTY targets. Return 0.
       return 0;
@@ -520,7 +549,10 @@ class SalesService {
 
     // Previous month
     int pm = month - 1, py = year;
-    if (pm < 1) { pm = 12; py = year - 1; }
+    if (pm < 1) {
+      pm = 12;
+      py = year - 1;
+    }
     final (prevFrom, prevTo) = _monthRange(pm, py);
 
     // Fetch all QTY for the month (excluding head office)
@@ -603,7 +635,9 @@ class SalesService {
       final target = (targetMap[key] ?? 0).toDouble();
       final prev = (prevSalesMap[key] ?? 0).toDouble();
       final ach = target > 0 ? (sales / target * 100) : 0.0;
-      final growth = prev > 0 ? ((sales - prev) / prev * 100) : (sales > 0 ? 100.0 : 0.0);
+      final growth = prev > 0
+          ? ((sales - prev) / prev * 100)
+          : (sales > 0 ? 100.0 : 0.0);
 
       result.add({
         'key': key,
@@ -616,7 +650,9 @@ class SalesService {
       });
     }
 
-    result.sort((a, b) => (b['sales'] as double).compareTo(a['sales'] as double));
+    result.sort(
+      (a, b) => (b['sales'] as double).compareTo(a['sales'] as double),
+    );
     return result;
   }
 
@@ -636,7 +672,7 @@ class SalesService {
         .lte('transaction_date', to)
         .inFilter('collection', ['DPS', 'SVC'])
         .not('location', 'ilike', '%head office%');
-        
+
     if (isManager) {
       if (!_isAllStores(store)) {
         q = q.ilike('location', '%${store.split(' ').last}%');
@@ -644,33 +680,37 @@ class SalesService {
     } else {
       q = q.eq('salesman', advisorName);
     }
-    
+
     final res = await q.order('transaction_date', ascending: false);
-    
+
     return (res as List).map((r) {
-      final gross = (((r['qty'] as num?) ?? 1) * ((r['price'] as num?) ?? 0)).toDouble();
+      final gross = (((r['qty'] as num?) ?? 1) * ((r['price'] as num?) ?? 0))
+          .toDouble();
       return Transaction(
-        id:              r['id'] ?? 0,
-        transNo:         (r['transaction_no'] as String?) ?? '',
+        id: r['id'] ?? 0,
+        transNo: (r['transaction_no'] as String?) ?? '',
         transactionDate: (r['transaction_date'] as String?) ?? '',
-        customer:        (r['customer_name'] as String?) ?? '',
-        salesman:        (r['salesman'] as String?) ?? '',
-        location:        (r['location'] as String?) ?? '',
-        mainCategory:    (r['collection'] as String?) ?? '',
-        collection:      (r['collection'] as String?) ?? '',
-        netSales:        ((r['net_sales'] as num?) ?? 0).toDouble(),
-        grossSales:      gross,
-        valDisc:         ((r['sub_total_discount'] as num?) ?? 0).toDouble(),
-        comm:            ((r['card_comm'] as num?) ?? 0).toDouble(),
-        qty:             ((r['qty'] as num?) ?? 0).toInt(),
-        sapCode:         (r['sap_code'] as String?) ?? '',
-        catalogueCode:   (r['catalogue_code'] as String?) ?? '',
+        customer: (r['customer_name'] as String?) ?? '',
+        salesman: (r['salesman'] as String?) ?? '',
+        location: (r['location'] as String?) ?? '',
+        mainCategory: (r['collection'] as String?) ?? '',
+        collection: (r['collection'] as String?) ?? '',
+        netSales: ((r['net_sales'] as num?) ?? 0).toDouble(),
+        grossSales: gross,
+        valDisc: ((r['sub_total_discount'] as num?) ?? 0).toDouble(),
+        comm: ((r['card_comm'] as num?) ?? 0).toDouble(),
+        qty: ((r['qty'] as num?) ?? 0).toInt(),
+        sapCode: (r['sap_code'] as String?) ?? '',
+        catalogueCode: (r['catalogue_code'] as String?) ?? '',
       );
     }).toList();
   }
 
   // Update commission (card_comm) for a DP/SVC transaction by transaction_no
-  static Future<void> updateDpsSvcCommission({required String transNo, required double value}) async {
+  static Future<void> updateDpsSvcCommission({
+    required String transNo,
+    required double value,
+  }) async {
     await _sb
         .from('bvlgari_sales')
         .update({'card_comm': value})
@@ -685,7 +725,20 @@ class SalesService {
     String? emailTo,
     String ccEmail = 'aris@mraretail.co.id, jessica@mogems.co.id',
   }) async {
-    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const monthNames = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
     final monthName = monthNames[month - 1];
 
     try {
@@ -714,4 +767,3 @@ class SalesService {
     }
   }
 }
-

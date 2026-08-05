@@ -32,6 +32,20 @@ class CrmProfile {
   final String barangAntusias;
   final String? tanggalLahir;
   final String createdAt;
+  // Extended fields from Supabase
+  final String namaDepan;
+  final String namaBelakang;
+  final String etnis;
+  final String agama;
+  final String jumlahAnak;
+  final String domisiliLuarNegeri;
+  final String topikPembicaraanFavorit;
+  final String cakeFavorit;
+  final String hobbySub;
+  final String hobbyOthers;
+  final String ktpPassport;
+  final String fotoCustomer;
+  final String? tanggalPernikahan;
 
   const CrmProfile({
     required this.id,
@@ -67,6 +81,19 @@ class CrmProfile {
     required this.barangAntusias,
     this.tanggalLahir,
     required this.createdAt,
+    this.namaDepan = '',
+    this.namaBelakang = '',
+    this.etnis = '',
+    this.agama = '',
+    this.jumlahAnak = '',
+    this.domisiliLuarNegeri = '',
+    this.topikPembicaraanFavorit = '',
+    this.cakeFavorit = '',
+    this.hobbySub = '',
+    this.hobbyOthers = '',
+    this.ktpPassport = '',
+    this.fotoCustomer = '',
+    this.tanggalPernikahan,
   });
 
   String get displayName =>
@@ -124,6 +151,19 @@ class CrmProfile {
       barangAntusias:        s(m['barang_antusias']),
       tanggalLahir:          m['tanggal_lahir']?.toString(),
       createdAt:             s(m['created_at']),
+      namaDepan:             s(m['nama_depan']),
+      namaBelakang:          s(m['nama_belakang']),
+      etnis:                 s(m['etnis']),
+      agama:                 s(m['agama']),
+      jumlahAnak:            s(m['jumlah_anak']),
+      domisiliLuarNegeri:    s(m['domisili_luar_negeri']),
+      topikPembicaraanFavorit: s(m['topik_pembicaraan_favorit']),
+      cakeFavorit:           s(m['cake_favorit']),
+      hobbySub:              s(m['hobby_sub']),
+      hobbyOthers:           s(m['hobby_others']),
+      ktpPassport:           s(m['ktp_passport']),
+      fotoCustomer:          s(m['foto_customer']),
+      tanggalPernikahan:     m['tanggal_pernikahan']?.toString(),
     );
   }
 }
